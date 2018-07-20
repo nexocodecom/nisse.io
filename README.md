@@ -1,6 +1,18 @@
-# nisse.io #
+# nisse.io
 
-## Running app ##
+Meet Nisse, your Slack team little helper!
+
+Nisse is an open source app and Slackbot for reporting and managing your team's workload.
+#### Easy tracking
+Nisse Slackbot will let you track your daily workload in a seamless way! Just talk to him!
+####  Daily reminders
+Nisse will remind you to log your work every day, so no need to worry about it!
+#### Admin reports
+Admin gets access to reports with time logs and work submitted by each team member.
+
+Feel free to contribute, comment, report an issue or, what’s the most important, use it yourself. **_Let Nisse help you!_**
+
+## Running app
 - install all required packages by running:
     ```
     pip install -r requirements.txt
@@ -77,7 +89,7 @@
     above command will run app instance on localhost on port 5002.
 
 
-## Migrations ##
+### Migrations
 Performing migrations is limited to a few CLI command.
 Make changes to the database model, and then just run command to create migration file: 
 ```
@@ -92,7 +104,7 @@ Besides of review, ALWAYS test downgrade operation on your local machine, this w
 
 Remember, -m parameter is not required, but it is good to give a migration some title which make it easier to know what particular migration actually does.
 
-### Potential pitfalls detected during migrations development
+#### Potential pitfalls detected during migrations development
 > This list should be constantly expaned while gaining more and more experience with flask migrations.
 
 - when new foreign key constraint is created, ALWAYS add it appropriate name instead of python `None` - this will allow seamless downgrade operation
@@ -111,7 +123,7 @@ To actually perfrom migration on database, execute:
 flask db upgrade
 ```
 
-## Package management ##
+### Package management
 When new package is installed and it is required by application, it should be added to `requirements.txt` file, so other developers could simply 
 install new packages by running command: 
 ```
