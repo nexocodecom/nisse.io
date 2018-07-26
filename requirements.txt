@@ -16,3 +16,4 @@ google-auth
 apscheduler
 jdcal
 openpyxl
+flask_bcrypt

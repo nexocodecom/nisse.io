@@ -4,6 +4,7 @@ from datetime import timedelta, date
 from datetime import datetime as dt
 from decimal import Decimal
 from enum import Enum
+from threading import Thread
 from typing import NamedTuple
 from slackclient import SlackClient
 
@@ -36,6 +37,7 @@ class SlackCommandService:
     This class handles all calls from slack
 
     """
+
     @inject
     def __init__(self, logger: logging.Logger, project_service: ProjectService, user_service: UserService,
                  slack_client: SlackClient, print_db: ReportService, print_output: XlsxDocumentService,
@@ -109,6 +111,7 @@ class SlackCommandService:
             duration=dialog_submission_body['submission']['duration'],
             comment=dialog_submission_body['submission']['comment'],
             project=dialog_submission_body['submission']['project'],
+            user_id=dialog_submission_body['user']['id']
         )
 
         if not is_number(time_record.duration) or float(time_record.duration) < 0 or float(time_record.duration) > 24:
@@ -131,55 +134,60 @@ class SlackCommandService:
                        ]
                    }, 200
 
-        # todo cache projects globally e.g. Flask-Cache
-        projects = self.project_service.get_projects()
-        selected_project = list_find(lambda p: str(p.project_id) == time_record.project, projects)
+        # continue work in separate thread to not delay response
+        task = Thread(target=self.save_submitted_time_task, args=(time_record,))
+        task.start()
 
-        if selected_project is None:
-            return {
-                       "errors": [
-                           {
-                               "name": "project",
-                               "error": "Project doesn't exist"
-                           }
-                       ]
-                   }, 200
+        # return response to slack as soon as possible
+        return None, 204
 
+    def save_submitted_time_task(self, time_record):
         slack_user_details = self.slack_client.api_call(
             "users.info",
-            user=dialog_submission_body['user']['id']
+            user=time_record.user_id
         )
 
         if not slack_user_details['ok']:
-            return {
-                       "errors": [
-                           {
-                               "name": "project",
-                               "error": "Can't save time for current user"
-                           }
-                       ]
-                   }, 200
+            logging.error("Failed to get user detail for slack user: " + time_record.user_id)
+            return
+
+        im_channel = self.slack_client.api_call(
+            "im.open",
+            user=time_record.user_id)
+
+        if not im_channel["ok"]:
+            self.logger.error(
+                "Can't open im channel for: " + str(time_record.user_id) + '. ' + im_channel["error"])
+            return
 
         user = self.get_or_add_user(slack_user_details['user']['profile']['email'],
                                     slack_user_details['user']['profile']['real_name_normalized'],
                                     slack_user_details['user']['is_owner'])
 
+        # todo cache projects globally e.g. Flask-Cache
+        projects = self.project_service.get_projects()
+        selected_project = list_find(lambda p: str(p.project_id) == time_record.project, projects)
+
+        if selected_project is None:
+            self.logger.error(
+                "Project doesn't exist: " + time_record.project)
+            return
+
         if list_find(lambda p: str(p.project_id) == time_record.project, user.user_projects) is None:
             self.project_service.assign_user_to_project(project=selected_project, user=user)
 
-        # check if submitted hours doesn't exceed the limit
+            # check if submitted hours doesn't exceed the limit
         submitted_time_entries = self.user_service.get_user_time_entries(user.user_id,
                                                                          time_record.get_parsed_date(),
                                                                          time_record.get_parsed_date())
         if sum([te.duration for te in submitted_time_entries]) + Decimal(time_record.duration) > DAILY_HOUR_LIMIT:
-            return {
-                       "errors": [
-                           {
-                               "name": "day",
-                               "error": "You can't submit more than " + str(DAILY_HOUR_LIMIT) + " hours for one day"
-                           }
-                       ]
-                   }, 200
+            self.slack_client.api_call(
+                "chat.postMessage",
+                channel=im_channel['channel']['id'],
+                text="Sorry, but You can't submit more than " + str(DAILY_HOUR_LIMIT) + " hours for one day.",
+                as_user=True
+            )
+            return
 
         self.project_service.report_user_time(selected_project,
                                               user,
@@ -199,14 +207,6 @@ class SlackCommandService:
             },
         ]
 
-        im_channel = self.slack_client.api_call(
-            "im.open",
-            user=dialog_submission_body['user']['id'])
-
-        if not im_channel["ok"]:
-            self.logger.error(
-                "Can't open im channel for: " + str(dialog_submission_body['user']['id']) + '. ' + im_channel["error"])
-
         resp = self.slack_client.api_call(
             "chat.postMessage",
             channel=im_channel['channel']['id'],
@@ -217,7 +217,7 @@ class SlackCommandService:
         if not resp["ok"]:
             self.logger.error("Can't post message: " + resp.get("error"))
 
-        return None, 204
+        return
 
     def list_command_message(self, command_body, user):
         message_text = "I'm going to list saved time records..."
@@ -921,7 +921,8 @@ class SlackCommandService:
                            ]
                        },
                        {
-                           "text": "*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(command_name),
+                           "text": "*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(
+                               command_name),
                            "attachment_type": "default",
                            "mrkdwn_in": [
                                "text"
@@ -961,6 +962,7 @@ class TimeRecord(NamedTuple):
     duration: float
     comment: str
     project: str
+    user_id: str
 
     def get_parsed_date(self):
         return datetime.datetime.strptime(self.day, '%Y-%m-%d').date()
