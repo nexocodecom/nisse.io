@@ -1,4 +1,5 @@
 import logging
+import time
 import unittest
 from datetime import datetime
 import mock
@@ -166,12 +167,15 @@ class SlackCommandServiceTests(unittest.TestCase):
         # act
         result = self.slack_command_service.save_submitted_time(message_body)
         # assert
+        self.assertEqual((None, 204), result)
+        time.sleep(0.5)
         self.mock_user_service.add_user.assert_called_once()
-        self.assertEqual(self.mock_slack_client.api_call.call_count, 3)
-        self.assertEqual(result, (None, 204))
+        self.assertEqual(3, self.mock_slack_client.api_call.call_count)
 
     def test_save_submitted_time_should_return_error_if_exceed_daily_hours_limit(self):
         # arrange
+        sent_chat_msgs = []
+
         def slack_client_api_call_side_effect(method, **kwargs):
             if method == "users.info":
                 return {
@@ -185,6 +189,7 @@ class SlackCommandServiceTests(unittest.TestCase):
                     }
                 }
             if method == "chat.postMessage":
+                sent_chat_msgs.append(kwargs['text'])
                 return {
                     "ok": True
                 }
@@ -211,14 +216,10 @@ class SlackCommandServiceTests(unittest.TestCase):
         # act
         result = self.slack_command_service.save_submitted_time(message_body)
         # assert
-        self.assertEqual(result, ({
-                                      "errors": [
-                                          {
-                                              "name": "day",
-                                              "error": "You can't submit more than 20 hours for one day"
-                                          }
-                                      ]
-                                  }, 200))
+        self.assertEqual(result, (None, 204))
+        time.sleep(0.5)
+        self.assertEqual(len(sent_chat_msgs), 1)
+        self.assertEqual(sent_chat_msgs[0], "Sorry, but You can't submit more than 20 hours for one day.")
 
     def test_save_submitted_time_should_return_error_if_negative_hour(self):
         # arrange
