@@ -9,15 +9,16 @@ from flask_migrate import Migrate
 from nisse.models.database import Base
 import nisse.services
 import nisse.routes
-from nisse.utils.load_config import load_config
+from nisse.utils.configs import load_config
+from nisse.utils.logging import init_logging
 from nisse.utils.oauth_default_provider import oauth_default_provider
 from nisse.services import ClientService, UserService, TokenService
 from __version__ import __version__
 
 application = Flask(__name__, instance_relative_config=True)
-application.logger.setLevel(logging.DEBUG)
 
 load_config(application)
+init_logging(application)
 
 FlaskJSON(application)
 api = Api(application)
