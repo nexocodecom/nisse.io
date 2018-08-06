@@ -5,7 +5,7 @@ from cmreslogging.handlers import CMRESHandler
 def init_logging(application):
 
     application.logger.info('host: ' + application.config.get("ELASTIC_HOST"))
-    application.logger.info('port: ' + application.config.get("ELASTIC_POST"))
+    application.logger.info('port: ' + application.config.get("ELASTIC_PORT"))
 
     # if application.config['ELASTIC_HOST']:
     env_name = 'development'
