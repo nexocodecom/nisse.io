@@ -21,6 +21,6 @@ python-dateutil
 marshmallow==2.15.3
 marshmallow-oneofschema==1.0.5
 marshmallow_sqlalchemy
-CMRESHandler
-elasticsearch
-requests
+CMRESHandler==1.0.0
+elasticsearch==6.3.0
+requests==2.19.1
