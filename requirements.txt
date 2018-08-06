@@ -17,3 +17,7 @@ apscheduler
 jdcal
 openpyxl
 flask_bcrypt
+python-dateutil
+marshmallow==2.15.3
+marshmallow-oneofschema==1.0.5
+marshmallow_sqlalchemy

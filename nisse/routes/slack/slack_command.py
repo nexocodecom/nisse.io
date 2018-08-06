@@ -1,8 +1,13 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask import request
 from flask_injector import inject
 from flask_restful import Resource
+from marshmallow import ValidationError
+from typing import Dict
 
+from nisse.models.slack.errors import ErrorSchema, Error
+from nisse.models.slack.message import Message
+from nisse.services.exception import DataException
 from nisse.services.slack.slack_command_service import SlackCommandService
 
 
@@ -12,6 +17,16 @@ class SlackCommand(Resource):
     def __init__(self, app: Flask, slack_command_service: SlackCommandService):
         self.app = app
         self.slack_command_service = slack_command_service
+        self.error_schema = ErrorSchema()
+        self.dispatcher = {
+            None: self.slack_command_service.submit_time_dialog,
+            "": self.slack_command_service.submit_time_dialog,
+            'list': self.slack_command_service.list_command_message,
+            'report': self.slack_command_service.report_dialog,
+            'delete': self.slack_command_service.delete_command_message,
+            'reminder': self.reminder,
+            'help': self.slack_command_service.help_command_message
+        }
 
     def post(self):
         command_body = request.form
@@ -23,43 +38,28 @@ class SlackCommand(Resource):
                                   .format(command_body["token"], self.app.config['SLACK_VERIFICATION_TOKEN']))
             return "Request contains invalid Slack verification token", 403
 
-        command_first_param = next(iter(command_body["text"].split(" ") or []), None)
+        params = command_body["text"].split(" ") or []
+        action = params[0]
+        arguments = params[1:]
 
-        return {
-            None: self.tt,
-            "": self.tt,
-            'list': self.tt,
-            'report': self.tt,
-            'delete': self.tt,
-            'reminder': self.reminder
-            }.get(command_first_param, self.tt)(command_body, command_first_param)
+        try:
+            result = self.dispatcher.get(action, self.handle_other)(command_body, arguments, action)
+            return (result, 200) if result else (None, 204)
 
-    def tt(self, command_body, command_param):
-        params = iter(command_body["text"].split(" ") or [])
-        next(params, None)
-        command_inner_param = next(params, None)
-        if command_param is None or command_param == "":
-            return self.slack_command_service.submit_time_dialog(command_body)
-        if command_param == "list":
-            return self.slack_command_service.list_command_message(command_body, command_inner_param)
-        if command_param == "report":
-            return self.slack_command_service.report_dialog(command_body)
-        if command_param == "delete":
-            return self.slack_command_service.delete_command_message(command_body)
-        if command_param == "help":
-            return self.slack_command_service.help_command_message(command_body)
+        except DataException as e:
+            error_result: Dict = self.error_schema.dump({'errors': [Error(name=e.field, error=e.message)]}).data
+            return error_result, 200
 
-        return None, 204
+    def reminder(self, command_body, arguments, action):
+        if not arguments or arguments[0] == "show":
+            return self.slack_command_service.reminder_show(command_body, arguments, action)
+        if arguments[0] == "set":
+            return self.slack_command_service.reminder_set(command_body, arguments, action)
 
-    def reminder(self, command_body, param):
-        params = iter(command_body["text"].split(" ") or [])
-        next(params, None)
-        command_param = next(params, None)
-        if command_param is None or command_param == "":
-            return self.slack_command_service.reminder_show(command_body)
-        if command_param == "show":
-            return self.slack_command_service.reminder_show(command_body)
-        if command_param == "set":
-            return self.slack_command_service.reminder_set(command_body)
-
-        return None, 204
+    @staticmethod
+    def handle_other(commands_body, arguments, action):
+        return Message(
+            text="Oops, I don't understand *" + action + "* :thinking_face:",
+            response_type="ephemeral",
+            mrkdwn=True
+        ).dump()

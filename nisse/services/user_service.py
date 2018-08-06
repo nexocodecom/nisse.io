@@ -4,6 +4,7 @@ import datetime
 
 from flask_injector import inject
 from sqlalchemy import and_
+from typing import List
 
 from nisse.models.database import User, TimeEntry, UserRole, Project, UserProject
 from flask_bcrypt import Bcrypt
@@ -82,7 +83,7 @@ class UserService(object):
             .order_by(TimeEntry.report_date.desc()) \
             .first()
 
-    def get_last_ten_time_entries(self, user_id: int, project_id: int):
+    def get_last_ten_time_entries(self, user_id: int, project_id: int) -> List[TimeEntry]:
         return self.db.query(TimeEntry) \
             .join(TimeEntry.user) \
             .join(TimeEntry.project) \
@@ -92,7 +93,7 @@ class UserService(object):
             .limit(10) \
             .all()
 
-    def get_time_entry(self, user_id: int, time_entry_id: int):
+    def get_time_entry(self, user_id: int, time_entry_id: int) -> TimeEntry:
         return self.db.query(TimeEntry) \
             .join(TimeEntry.user) \
             .filter(User.user_id == user_id) \

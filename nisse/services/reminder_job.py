@@ -5,8 +5,9 @@ from slackclient import SlackClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from nisse.models.slack.payload import RemindTimeReportBtnPayload
 from nisse.services import UserService
-from nisse.services.slack.slack_command_service import CALLBACK_TOKEN_REMINDER_REPORT_BTN
+from nisse.utils.string_helper import get_full_class_name
 
 
 def get_users_to_notify(logger, config):
@@ -57,10 +58,10 @@ def remind(logger, config):
             mrkdwn=True,
             attachments=[
                 {
-                    "text": "Click 'Report' or use */tt* command:",
+                    "text": "Click 'Report' or use */ni* command:",
                     "color": "#3AA3E3",
                     "attachment_type": "default",
-                    "callback_id": CALLBACK_TOKEN_REMINDER_REPORT_BTN,
+                    "callback_id": get_full_class_name(RemindTimeReportBtnPayload),
                     "actions": [
                         {
                             "name": "report",

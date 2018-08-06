@@ -1,9 +1,12 @@
 import json
-from flask import Flask
+from flask import Flask, jsonify
 from flask import request
 from flask_injector import inject
 from flask_restful import Resource
-import nisse.services.slack.slack_command_service
+from marshmallow import ValidationError, UnmarshalResult
+
+from nisse.models.slack.errors import Error, ErrorSchema
+from nisse.models.slack.payload import Payload, GenericPayloadSchema
 from nisse.services.slack.slack_command_service import SlackCommandService
 
 
@@ -13,24 +16,22 @@ class SlackDialogSubmission(Resource):
     def __init__(self, app: Flask, slack_command_service: SlackCommandService):
         self.app = app
         self.slack_command_service = slack_command_service
+        self.schema = GenericPayloadSchema()
 
     def post(self):
-        dialog_submission_body = json.loads(request.form["payload"])
-        callback_id = dialog_submission_body.get("callback_id")
 
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_TIME_SUBMIT:
-            return self.slack_command_service.save_submitted_time(dialog_submission_body)
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_LIST_COMMAND_TIME_RANGE:
-            return self.slack_command_service.list_command_time_range_selected(dialog_submission_body)
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_DELETE_COMMAND_PROJECT:
-            return self.slack_command_service.delete_command_project_selected(dialog_submission_body)
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_DELETE_COMMAND_TIME_ENTRY:
-            return self.slack_command_service.delete_command_time_entry_selected(dialog_submission_body)
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_DELETE_COMMAND_CONFIRM:
-            return self.slack_command_service.delete_command_time_entry_confirm_remove(dialog_submission_body)
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_REPORT_SUBMIT:
-            return self.slack_command_service.report_generate_command(dialog_submission_body)
-        if callback_id == nisse.services.slack.slack_command_service.CALLBACK_TOKEN_REMINDER_REPORT_BTN:
-            return self.slack_command_service.submit_time_dialog_reminder(dialog_submission_body)
+        result: UnmarshalResult = self.schema.load(json.loads(request.form["payload"]))
+        if result.errors and result.errors['submission']:
+            submission = result.errors['submission']
+            errors = []
+            for i, field in enumerate(submission):
+                errors.append(Error(field, submission[field]))
 
-        return None, 204
+            schema = ErrorSchema(many=True)
+            result = schema.dump(errors).data
+            return jsonify({'errors': result})
+
+        else:
+            payload: Payload = result.data
+            result = payload.handle(self.slack_command_service)
+            return (result, 200) if result else (None, 204)
