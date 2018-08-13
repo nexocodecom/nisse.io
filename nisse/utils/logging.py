@@ -16,4 +16,3 @@ def init_logging(application):
         application.logger.addHandler(handler)
 
     application.logger.setLevel(logging.DEBUG)
-

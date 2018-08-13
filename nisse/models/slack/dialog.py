@@ -44,6 +44,7 @@ class ElementSchema(Schema):
     value = fields.String(missing=True)
     subtype = fields.String(missing=True)
     hint = fields.String(missing=True)
+    optional = fields.String(missing=True)
     options = fields.List(fields.Nested(SelectOptionSchema), missing=True)
 
     @post_load

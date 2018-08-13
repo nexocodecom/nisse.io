@@ -32,11 +32,12 @@ class TimeReportingForm(object):
 
 class ReportGenerateForm(object):
 
-    def __init__(self, project, day_from, day_to, user: SlackUser):
+    def __init__(self, project, day_from, day_to, user: SlackUser=None):
         self.project = project
         self.day_from = day_from
         self.day_to = day_to
-        self.user = user
+        if user:
+            self.user = user
 
 
 class Team(object):
@@ -174,7 +175,7 @@ class ReportGenerateFormSchema(Schema):
     project = fields.String()
     day_from = fields.String(validate=check_date)
     day_to = fields.String(validate=check_date)
-    user = fields.String()
+    user = fields.String(allow_none=True)
 
     @post_load
     def make_obj(self, data):

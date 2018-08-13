@@ -23,7 +23,7 @@ def configure_container(binder: Binder):
 
     binder.bind(logging.Logger, to=binder.injector.get(Flask).logger)
 
-    binder.bind(SQLAlchemy, to=SQLAlchemy(binder.injector.get(Flask), model_class=Base), scope=singleton)
+    binder.bind(SQLAlchemy, to=SQLAlchemy(binder.injector.get(Flask), model_class=Base), scope=request)
 
     binder.bind(Session, to=binder.injector.get(SQLAlchemy).session, scope=request)
 

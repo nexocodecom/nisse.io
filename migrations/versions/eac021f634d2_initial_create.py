@@ -62,7 +62,7 @@ def upgrade():
     sa.Column('token_type', sa.String(length=40), nullable=True),
     sa.Column('access_token', sa.String(length=255), nullable=True),
     sa.Column('refresh_token', sa.String(length=255), nullable=True),
-    sa.Column('expires', sa.DATETIME(), nullable=True),
+    sa.Column('expires', sa.TIMESTAMP(), nullable=True),
     sa.ForeignKeyConstraint(['client_id'], ['clients.client_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('id'),

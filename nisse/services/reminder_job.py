@@ -11,10 +11,9 @@ from nisse.utils.string_helper import get_full_class_name
 
 
 def get_users_to_notify(logger, config):
-    engine = create_engine(config['SQLALCHEMY_DATABASE_URI'], connect_args={
-        'port': config['SQLALCHEMY_DATABASE_PORT']
-    })
+    engine = create_engine(config['SQLALCHEMY_DATABASE_URI'])
     session_maker = sessionmaker(bind=engine)
+    session = None
     try:
         session = session_maker()
         user_service = UserService(session, Bcrypt())
@@ -25,7 +24,8 @@ def get_users_to_notify(logger, config):
         logger.error(e)
         raise
     finally:
-        session.close()
+        if session:
+            session.close()
 
 
 def remind(logger, config):

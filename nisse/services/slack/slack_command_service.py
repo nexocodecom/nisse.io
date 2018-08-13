@@ -267,7 +267,7 @@ class SlackCommandService:
         if user.role.role == 'admin':
             users = self.user_service.get_users()
             user_options_list = [LabelSelectOption(label=p.first_name, value=p.user_id) for p in users]
-            dialog.elements.append(Element(label="User", type="select", name='user', placeholder="Select user", optional="true", options=user_options_list))
+            dialog.elements.append(Element(label="User", optional='true', type="select", name='user', placeholder="Select user", options=user_options_list))
 
         resp = self.slack_client.api_call("dialog.open", trigger_id=command_body['trigger_id'], dialog=dialog.dump())
 
@@ -277,10 +277,13 @@ class SlackCommandService:
         return None
 
     def report_generate_command(self, form: ReportGenerateFormPayload):
+
         date_to = form.submission.day_to
         date_from = form.submission.day_from
 
-        selected_user = form.submission.user
+        selected_user=None
+        if hasattr(form.submission, 'user'):
+            selected_user = form.submission.user
 
         project_id = form.submission.project
 

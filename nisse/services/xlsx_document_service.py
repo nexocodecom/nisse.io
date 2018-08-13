@@ -49,7 +49,7 @@ class XlsxDocumentService(object):
             i = i + 1
             sheet['A' + str(i)] = n.report_date.strftime('%Y-%m-%d')
             sheet['B' + str(i)] = n.duration
-            sheet['C' + str(i)] = str(n.user.first_name) + ' ' + str(n.user.last_name)
+            sheet['C' + str(i)] = str(n.user.first_name)
             sheet['D' + str(i)] = n.comment
 
         if i > 5:
