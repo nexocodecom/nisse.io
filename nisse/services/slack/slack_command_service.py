@@ -232,14 +232,16 @@ class SlackCommandService:
                     mrkdwn_in=["text"]
                 )
 
+        projects['total'] = Attachment(
+            title="Total",
+            text="You reported *" + string_helper.format_duration_decimal(
+                duration_total) + "h* for `" + time_range_selected + "`",
+            color="#D72B3F",
+            attachment_type="default",
+            mrkdwn_in=["text"]
+        )
+
         if inner_user_id == user_id:
-            projects['total'] = Attachment(
-                title="Total",
-                text="You reported *" + string_helper.format_duration_decimal(duration_total) + "h* for `" + time_range_selected + "`",
-                color="#D72B3F",
-                attachment_type="default",
-                mrkdwn_in=["text"]
-            )
 
             projects['footer'] = Attachment(
                 text="",
