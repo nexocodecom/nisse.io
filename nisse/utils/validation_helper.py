@@ -3,7 +3,7 @@ import datetime
 
 def is_number(s):
     try:
-        float(s)
+        int(s)
         return True
     except ValueError:
         return False

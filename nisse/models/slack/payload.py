@@ -23,10 +23,11 @@ class Channel(object):
 
 class TimeReportingForm(object):
 
-    def __init__(self, project, day, duration, comment):
+    def __init__(self, project, day, hours, minutes, comment):
         self.project = project
         self.day = day
-        self.duration = duration
+        self.hours = hours
+        self.minutes = minutes
         self.comment = comment
 
 
@@ -150,10 +151,13 @@ class ChannelSchema(Schema):
         return Channel(**data)
 
 
-def check_duration(duration):
-    if not is_number(duration) or float(duration) < 0 or float(duration) > 20:
-        raise ValidationError("Use numbers, e.g. 2 or 2.5 or 2.45 etc. up to 20", ["duration"])
+def check_duration_hours(duration):
+    if not is_number(duration) or int(duration) > 12:
+        raise ValidationError("Use integers, e.g. 2 up to 12", ["hours"])
 
+def check_duration_minutes(duration):
+    if not is_number(duration) or (int(duration) % 15 != 0):
+        raise ValidationError("Use integers 0|15|30|45 only", ["minutes"])
 
 def check_date(day):
     if not validate_date(day):
@@ -163,7 +167,8 @@ def check_date(day):
 class TimeReportingFormSchema(Schema):
     project = fields.String()
     day = fields.String(validate=check_date)
-    duration = fields.String(validate=check_duration)
+    hours = fields.String(validate=check_duration_hours)
+    minutes = fields.String(validate=check_duration_minutes)
     comment = fields.String()
 
     @post_load

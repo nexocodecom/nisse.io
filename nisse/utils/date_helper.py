@@ -3,7 +3,6 @@ from datetime import timedelta
 from datetime import datetime as dt
 from enum import Enum
 
-
 class TimeRanges(Enum):
     today = 'Today'
     yesterday = 'Yesterday'
@@ -11,7 +10,6 @@ class TimeRanges(Enum):
     previous_week = 'Previous week'
     this_month = 'This month'
     previous_month = 'Previous month'
-
 
 def get_start_end_date(time_range_selected):
     now = dt.now()
@@ -36,3 +34,7 @@ def get_start_end_date(time_range_selected):
         start = end = now.date()
 
     return start, end
+
+
+def get_float_duration(hours, minutes):
+    return hours + minutes/60

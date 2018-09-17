@@ -12,7 +12,8 @@ class PrintParametersDto(object):
 
 class TimeRecordDto(NamedTuple):
     day: str
-    duration: float
+    hours: int
+    minutes: int
     comment: str
     project: str
     user_id: str

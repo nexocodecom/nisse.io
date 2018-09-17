@@ -1,3 +1,5 @@
+from typing import List
+
 from nisse.models import TimeEntry
 from nisse.models.slack.common import ActionType, LabelSelectOption
 from nisse.models.slack.dialog import Element, Dialog
@@ -83,10 +85,19 @@ def create_time_reporting_dialog_model(default_day, default_project_id, project_
     elements = [
         Element("Project", "select", "project", "Select a project", default_project_id, None, None, project_options_list),
         Element("Day", "text", "day", "Specify date", default_day),
-        Element("Duration", "text", "duration", "Hours", None, "number"),
+        Element("Duration hours", "select", "hours", None, "8", None, None, get_duration_hours()),
+        Element("Duration minutes", "select", "minutes", None, "0", None, None, get_duration_minutes()),
         Element("Note", "textarea", "comment", None, None, None, "Provide short description")
     ]
     return Dialog("Submitting time", "Submit", string_helper.get_full_class_name(TimeReportingFormPayload), elements)
+
+
+def get_duration_hours():
+    return [LabelSelectOption(n, n) for n in range(1, 13)]
+
+
+def get_duration_minutes() -> List[LabelSelectOption]:
+    return [LabelSelectOption(n, n) for n in range(0, 60, 15)]
 
 
 def create_generate_report_dialog_model(default_project: LabelSelectOption, previous_week, project_options_list, today):

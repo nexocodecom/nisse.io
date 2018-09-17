@@ -18,7 +18,7 @@ from nisse.services.user_service import *
 from nisse.services.reminder_service import ReminderService
 from nisse.services.report_service import ReportService
 from nisse.services.xlsx_document_service import XlsxDocumentService
-from nisse.utils.date_helper import TimeRanges, get_start_end_date
+from nisse.utils.date_helper import get_start_end_date, get_float_duration
 from nisse.utils import slack_model_helper
 from nisse.utils import string_helper
 from nisse.utils.validation_helper import *
@@ -77,7 +77,8 @@ class SlackCommandService:
     def save_submitted_time(self, form: TimeReportingFormPayload):
         time_record = TimeRecordDto(
             day=form.submission.day,
-            duration=form.submission.duration,
+            hours=int(form.submission.hours),
+            minutes=int(form.submission.minutes),
             comment=form.submission.comment,
             project=form.submission.project,
             user_id=form.user.id
@@ -120,7 +121,8 @@ class SlackCommandService:
 
             # check if submitted hours doesn't exceed the limit
         submitted_time_entries = self.user_service.get_user_time_entries(user.user_id, time_record.get_parsed_date(), time_record.get_parsed_date())
-        if sum([te.duration for te in submitted_time_entries]) + Decimal(time_record.duration) > DAILY_HOUR_LIMIT:
+        duration_float: float = get_float_duration(time_record.hours, time_record.minutes)
+        if sum([te.duration for te in submitted_time_entries]) + Decimal(duration_float) > DAILY_HOUR_LIMIT:
             self.slack_client.api_call(
                 "chat.postMessage",
                 channel=im_channel['channel']['id'],
@@ -129,10 +131,10 @@ class SlackCommandService:
             )
             return
 
-        self.project_service.report_user_time(selected_project, user, time_record.duration, time_record.comment, time_record.get_parsed_date())
+        self.project_service.report_user_time(selected_project, user, duration_float, time_record.comment, time_record.get_parsed_date())
 
         attachments = [Attachment(
-            title='Submitted ' + time_record.duration + ' hour(s) for ' + \
+            title='Submitted ' + string_helper.format_duration_decimal(Decimal(duration_float)) + ' hour(s) for ' + \
                   ('Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name,
             text="_" + time_record.comment + "_",
             mrkdwn_in=["text", "footer"],
@@ -216,7 +218,9 @@ class SlackCommandService:
             ).dump()
 
         projects = {}
+        duration_total = 0
         for time in time_records:
+            duration_total += time.duration
             if projects.get(time.project.name):
                 projects[time.project.name].text += "\n" + string_helper.make_time_string(time)
             else:
@@ -229,6 +233,14 @@ class SlackCommandService:
                 )
 
         if inner_user_id == user_id:
+            projects['total'] = Attachment(
+                title="Total",
+                text="You reported *" + string_helper.format_duration_decimal(duration_total) + "h* for `" + time_range_selected + "`",
+                color="#D72B3F",
+                attachment_type="default",
+                mrkdwn_in=["text"]
+            )
+
             projects['footer'] = Attachment(
                 text="",
                 footer="Use */ni delete* to remove record",
