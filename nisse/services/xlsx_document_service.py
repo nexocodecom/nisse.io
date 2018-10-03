@@ -27,7 +27,8 @@ class XlsxDocumentService(object):
         sheet.column_dimensions['A'].width = 20
         sheet.column_dimensions['B'].width = 15
         sheet.column_dimensions['C'].width = 15
-        sheet.column_dimensions['D'].width = 50
+        sheet.column_dimensions['D'].width = 15
+        sheet.column_dimensions['E'].width = 50
 
         sheet['A1'] = "Time report for project:"
         sheet['B1'] = project_name
@@ -41,16 +42,20 @@ class XlsxDocumentService(object):
 
         sheet['A5'] = "Date Time"
         sheet['B5'] = "Duration"
-        sheet['C5'] = "Employee"
-        sheet['D5'] = "Comment"
+        sheet['C5'] = "Project"
+        sheet['D5'] = "Employee"
+        sheet['E5'] = "Comment"
+
+        time_entries = sorted(time_entries, key=lambda te: te.report_date)
 
         i = 5
         for n in time_entries:
             i = i + 1
             sheet['A' + str(i)] = n.report_date.strftime('%Y-%m-%d')
             sheet['B' + str(i)] = n.duration
-            sheet['C' + str(i)] = str(n.user.first_name)
-            sheet['D' + str(i)] = n.comment
+            sheet['C' + str(i)] = n.project.name
+            sheet['D' + str(i)] = str(n.user.first_name)
+            sheet['E' + str(i)] = n.comment
 
         if i > 5:
             sheet['A' + str(i + 1)] = 'Sum:'

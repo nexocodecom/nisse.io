@@ -100,11 +100,11 @@ def get_duration_minutes() -> List[LabelSelectOption]:
     return [LabelSelectOption(n, n) for n in range(0, 60, 15)]
 
 
-def create_generate_report_dialog_model(default_project: LabelSelectOption, previous_week, project_options_list, today):
+def create_generate_report_dialog_model(previous_week, project_options_list, today):
     elements: Element = [
-        Element(label="Project", type="select", name='project', placeholder="Select a project", value=default_project.value, options=project_options_list),
         Element(label="Date from", type="text", name='day_from', placeholder="Specify date", value=previous_week),
-        Element(label="Date to", type="text", name='day_to', placeholder="Specify date", value=today)
+        Element(label="Date to", type="text", name='day_to', placeholder="Specify date", value=today),
+        Element(label="Project", type="select", name='project', optional='true', placeholder="Select a project", options=project_options_list)
     ]
 
     return Dialog(title="Generate report", submit_label="Generate", callback_id=string_helper.get_full_class_name(ReportGenerateFormPayload), elements=elements)

@@ -261,9 +261,6 @@ class SlackCommandService:
         projects = self.project_service.get_projects()
         project_options_list: List[LabelSelectOption] = [LabelSelectOption(label=p.name, value=p.project_id) for p in projects]
 
-        # todo select default project for current user
-        default_project: LabelSelectOption = project_options_list[0]
-
         today = date.today().isoformat()
         previous_week = (date.today() - timedelta(7)).isoformat()
 
@@ -272,7 +269,7 @@ class SlackCommandService:
         if not slack_user_details['ok']:
             raise DataException(field="user", message="No such user !")
 
-        dialog: Dialog = slack_model_helper.create_generate_report_dialog_model(default_project, previous_week, project_options_list, today)
+        dialog: Dialog = slack_model_helper.create_generate_report_dialog_model(previous_week, project_options_list, today)
 
         # admin see users list
         user = self.get_or_add_user(slack_user_details['user']['profile']['email'],
@@ -310,8 +307,10 @@ class SlackCommandService:
         projects = self.project_service.get_projects()
         selected_project = list_find(lambda p: str(p.project_id) == print_param.project_id, projects)
 
-        if selected_project is None:
-            raise DataException(field="project", message="Project doesn't exist")
+        selected_project_name = "All projects"
+
+        if selected_project is not None:
+            selected_project_name = selected_project.name
 
         slack_user_details = self.slack_client.api_call("users.info", user=form.user.id)
 
@@ -333,7 +332,7 @@ class SlackCommandService:
                                        secure_filename(str(uuid.uuid4())) + ".xlsx")
         load_data = self.print_db.load_report_data(print_param)
         self.print_output.save_report(path_for_report, print_param.date_from, print_param.date_to, load_data,
-                                      selected_project.name)
+                                      selected_project_name)
 
         im_channel = self.slack_client.api_call("im.open", user=form.user.id)
 
@@ -344,9 +343,9 @@ class SlackCommandService:
             "files.upload",
             channels=im_channel['channel']['id'],
             file=open(path_for_report, 'rb'),
-            title="Report for " + selected_project.name + " from " + print_param.date_from,
+            title="Report for " + selected_project_name + " from " + print_param.date_from,
             filetype="xlsx",
-            filename=selected_project.name + "-" + print_param.date_from + '-tt-report.xlsx'
+            filename=selected_project_name + "-" + print_param.date_from + '-tt-report.xlsx'
         )
 
         try:
