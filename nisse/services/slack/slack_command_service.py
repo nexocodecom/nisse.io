@@ -292,9 +292,9 @@ class SlackCommandService:
         date_to = form.submission.day_to
         date_from = form.submission.day_from
 
-        selected_user=None
+        selected_user_id=None
         if hasattr(form.submission, 'user'):
-            selected_user = form.submission.user
+            selected_user_id = form.submission.user
 
         project_id = form.submission.project
 
@@ -307,8 +307,7 @@ class SlackCommandService:
         projects = self.project_service.get_projects()
         selected_project = list_find(lambda p: str(p.project_id) == print_param.project_id, projects)
 
-        selected_project_name = "All projects"
-
+        selected_project_name = "all projects"
         if selected_project is not None:
             selected_project_name = selected_project.name
 
@@ -321,11 +320,15 @@ class SlackCommandService:
         user = self.get_or_add_user(slack_user_details['user']['profile']['email'],
                                     slack_user_details['user']['profile']['real_name_normalized'],
                                     slack_user_details['user']['is_owner'])
+
+        selected_user = None
         if user.role.role != 'admin':
             print_param.user_id = user.user_id
         # if admin select proper user
-        elif selected_user is not None:
-            print_param.user_id = selected_user
+        elif selected_user_id is not None:
+            print_param.user_id = selected_user_id
+            selected_user =  self.user_service.get_user_by_id(selected_user_id)
+
 
         # generate report
         path_for_report = os.path.join(current_app.instance_path, current_app.config["REPORT_PATH"],
@@ -337,15 +340,15 @@ class SlackCommandService:
         im_channel = self.slack_client.api_call("im.open", user=form.user.id)
 
         if not im_channel["ok"]:
-            self.logger.error("Can't open im channel for: " + str(selected_user) + '. ' + im_channel["error"])
+            self.logger.error("Can't open im channel for: " + str(selected_user_id) + '. ' + im_channel["error"])
 
         resp = self.slack_client.api_call(
             "files.upload",
             channels=im_channel['channel']['id'],
             file=open(path_for_report, 'rb'),
-            title="Report for " + selected_project_name + " from " + print_param.date_from,
+            title=string_helper.generate_xlsx_title(selected_user, selected_project_name, print_param.date_from, print_param.date_to),
             filetype="xlsx",
-            filename=selected_project_name + "-" + print_param.date_from + '-tt-report.xlsx'
+            filename=string_helper.generate_xlsx_file_name(selected_user, selected_project_name, print_param.date_from, print_param.date_to)
         )
 
         try:

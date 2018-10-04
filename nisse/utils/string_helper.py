@@ -1,6 +1,7 @@
 from nisse.models import TimeEntry
 from datetime import datetime as dt
 from datetime import timedelta
+from nisse.models import User
 
 
 def get_full_class_name(obj):
@@ -30,3 +31,19 @@ def format_duration_decimal(duration_float):
     ts = timedelta(hours=float(duration_float)).total_seconds()
     return str(int(ts/3600)) + ":" + str(int(ts % 3600 / 60)).zfill(2)
 
+
+def generate_xlsx_file_name(user: User, project_name, date_from, date_to):
+    return str(object=get_user_name(user) + "-" + project_name + "-"
+                      + dt.strptime(date_from, "%Y-%m-%d").strftime("%d-%m-%Y") + "-"
+                      + dt.strptime(date_to, "%Y-%m-%d").strftime("%d-%m-%Y") + ".xlsx")\
+        .lower().replace(" ", "-")
+
+
+def generate_xlsx_title(user: User, project_name, date_from, date_to):
+    return str(object="Report for " + get_user_name(user)  + " (" + project_name + ") within "
+                      + dt.strptime(date_from, "%Y-%m-%d").strftime("%d-%m-%Y") + " - "
+                      + dt.strptime(date_to, "%Y-%m-%d").strftime("%d-%m-%Y"))
+
+
+def get_user_name(user: User):
+    return user.first_name if user is not None else "all users"
