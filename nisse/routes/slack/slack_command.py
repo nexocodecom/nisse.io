@@ -22,7 +22,7 @@ class SlackCommand(Resource):
             None: self.slack_command_service.submit_time_dialog,
             "": self.slack_command_service.submit_time_dialog,
             'list': self.slack_command_service.list_command_message,
-            'report': self.slack_command_service.report_dialog,
+            'report': self.slack_command_service.report_pre_dialog,
             'delete': self.slack_command_service.delete_command_message,
             'reminder': self.reminder,
             'help': self.slack_command_service.help_command_message
