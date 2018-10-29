@@ -102,10 +102,6 @@ class ReportGenerateFormPayload(Payload):
     def handle(self, slack_command_service):
         return slack_command_service.report_generate_command(self)
 
-class ReportGenerateDialogPayload(Payload):
-
-    def handle(self, slack_command_service):
-        return slack_command_service.report_dialog(self)
 
 class ListCommandPayload(Payload):
 
@@ -247,11 +243,6 @@ class ReportGenerateFormPayloadSchema(PayloadSchema):
     def make_obj(self, data):
         return ReportGenerateFormPayload(**data)
 
-class ReportGenerateDialogPayloadSchema(PayloadSchema):
-
-    @post_load
-    def make_obj(self, data):
-        return ReportGenerateDialogPayload(**data)
 
 class ListCommandPayloadSchema(PayloadSchema):
 
@@ -293,7 +284,6 @@ class GenericPayloadSchema(OneOfSchema):
     type_schemas = {
         get_full_class_name(TimeReportingFormPayload): TimeReportingFormPayloadSchema,
         get_full_class_name(ReportGenerateFormPayload): ReportGenerateFormPayloadSchema,
-        get_full_class_name(ReportGenerateDialogPayload): ReportGenerateDialogPayloadSchema,
         get_full_class_name(ListCommandPayload): ListCommandPayloadSchema,
         get_full_class_name(DeleteCommandPayload): DeleteCommandPayloadSchema,
         get_full_class_name(DeleteTimeEntryPayload): DeleteTimeEntryPayloadSchema,

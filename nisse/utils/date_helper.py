@@ -6,8 +6,6 @@ from enum import Enum
 class TimeRanges(Enum):
     today = 'Today'
     yesterday = 'Yesterday'
-    this_2_week = 'This 2 weeks'
-    previous_2_week = 'Previous 2 weeks'
     this_week = 'This week'
     previous_week = 'Previous week'
     this_month = 'This month'
@@ -24,12 +22,6 @@ def get_start_end_date(time_range_selected):
     elif time_range_selected == TimeRanges.previous_week.value:
         start = now.date() - timedelta(days=now.date().weekday() + 7)
         end = start + timedelta(6)
-    elif time_range_selected == TimeRanges.this_2_week.value:
-        start = now.date() - timedelta(days=now.date().weekday() + 7)
-        end = start + timedelta(13)
-    elif time_range_selected == TimeRanges.previous_2_week.value:
-        start = now.date() - timedelta(days=now.date().weekday() + 14)
-        end = start + timedelta(13)
     elif time_range_selected == TimeRanges.this_month.value:
         start = dt(now.year, now.month, 1).date()
         end = dt(now.year, now.month, monthrange(now.year, now.month)[1]).date()
@@ -46,12 +38,3 @@ def get_start_end_date(time_range_selected):
 
 def get_float_duration(hours, minutes):
     return hours + minutes/60
-
-
-def date_range(start_date, end_date):
-    for n in range(int ((end_date - start_date).days)):
-        yield start_date + timedelta(n)
-
-
-def is_weekend(date):
-    return date.weekday() >= 5
