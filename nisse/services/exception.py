@@ -5,3 +5,8 @@ from dataclasses import dataclass
 class DataException(Exception):
     field: str
     message: str
+
+
+@dataclass
+class SlackUserException(Exception):
+    message: str

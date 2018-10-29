@@ -33,16 +33,15 @@ def format_duration_decimal(duration_float):
 
 
 def generate_xlsx_file_name(user: User, project_name, date_from, date_to):
-    return str(object=get_user_name(user) + "-" + project_name + "-"
-                      + dt.strptime(date_from, "%Y-%m-%d").strftime("%d-%m-%Y") + "-"
-                      + dt.strptime(date_to, "%Y-%m-%d").strftime("%d-%m-%Y") + ".xlsx")\
-        .lower().replace(" ", "-")
+    return str(str(get_user_name(user) + "-" + project_name + "-").lower().replace(" ", "-")
+                    + dt.strptime(date_from, "%Y-%m-%d").strftime("%d-%b-%Y") + "-"
+                    + dt.strptime(date_to, "%Y-%m-%d").strftime("%d-%b-%Y") + ".xlsx")
 
 
 def generate_xlsx_title(user: User, project_name, date_from, date_to):
-    return str(object="Report for " + get_user_name(user)  + " (" + project_name + ") within "
-                      + dt.strptime(date_from, "%Y-%m-%d").strftime("%d-%m-%Y") + " - "
-                      + dt.strptime(date_to, "%Y-%m-%d").strftime("%d-%m-%Y"))
+    return str("Report for " + get_user_name(user)  + " (" + project_name + ") within "
+                      + dt.strptime(date_from, "%Y-%m-%d").strftime("%d-%b-%Y") + " - "
+                      + dt.strptime(date_to, "%Y-%m-%d").strftime("%d-%b-%Y"))
 
 
 def get_user_name(user: User):

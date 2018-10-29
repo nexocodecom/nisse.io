@@ -7,7 +7,7 @@ from typing import Dict
 
 from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
-from nisse.services.exception import DataException
+from nisse.services.exception import DataException, SlackUserException
 from nisse.services.slack.slack_command_service import SlackCommandService
 
 
@@ -22,7 +22,7 @@ class SlackCommand(Resource):
             None: self.slack_command_service.submit_time_dialog,
             "": self.slack_command_service.submit_time_dialog,
             'list': self.slack_command_service.list_command_message,
-            'report': self.slack_command_service.report_dialog,
+            'report': self.slack_command_service.report_pre_dialog,
             'delete': self.slack_command_service.delete_command_message,
             'reminder': self.reminder,
             'help': self.slack_command_service.help_command_message
@@ -49,6 +49,8 @@ class SlackCommand(Resource):
         except DataException as e:
             error_result: Dict = self.error_schema.dump({'errors': [Error(name=e.field, error=e.message)]}).data
             return error_result, 200
+        except SlackUserException as e:
+            return Message(text=e.message, response_type="ephemeral").dump(), 200
 
     def reminder(self, command_body, arguments, action):
         if not arguments or arguments[0] == "show":

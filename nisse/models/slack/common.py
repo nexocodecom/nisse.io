@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import Enum
 
 from marshmallow import Schema, fields, post_load

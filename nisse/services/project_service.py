@@ -15,6 +15,12 @@ class ProjectService(object):
         return self.db.session.query(Project) \
             .all()
 
+    def get_projects_by_user(self, user_id: int):
+        return self.db.session.query(Project) \
+            .join(UserProject.project) \
+            .filter(UserProject.user_id == user_id) \
+            .all()
+
     def create_project(self, project_name):
         new_project = Project(name=project_name)
         self.db.session.add(new_project)
