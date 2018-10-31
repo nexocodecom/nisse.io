@@ -232,3 +232,25 @@ def create_delete_time_entry_model(time_entry: TimeEntry):
         mrkdwn=True,
         attachments=attachments
     )
+
+
+def create_delete_successful_message():
+    return Message(
+        text="Time entry removed! :wink:",
+        response_type="ephemeral",
+    )
+
+
+def create_delete_cancel_message():
+    Message(
+        text="Canceled :wink:",
+        response_type="ephemeral",
+    )
+
+
+def create_delete_not_found_message(project_name: str):
+    return Message(
+        text="Can't find any time entries for *" + project_name + "* :face_with_rolling_eyes:",
+        response_type="ephemeral",
+        mrkdwn=True
+    )

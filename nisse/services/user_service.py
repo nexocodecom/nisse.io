@@ -46,7 +46,12 @@ class UserService(object):
             .filter(email == User.username) \
             .first()
 
-    def add_user(self, username: str, first_name: str, password: str, role_name=USER_ROLE_USER):
+    def get_user_by_slack_id(self, slack_id: str):
+        return self.db.query(User) \
+            .filter(slack_id == User.slack_user_id) \
+            .first()
+
+    def add_user(self, username: str, first_name: str, last_name: str, password: str, slack_user_id: str, role_name=USER_ROLE_USER):
         """ Create a new User record with the supplied params
 
         :param username: Username of the user, email address.
@@ -57,7 +62,7 @@ class UserService(object):
         role_object = self.db.query(UserRole).filter(role_name == UserRole.role).first()
 
         pass_hash = self.bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=username, first_name=first_name, password=pass_hash, role_id=role_object.user_role_id)
+        new_user = User(username=username, first_name=first_name, last_name=last_name, slack_user_id=slack_user_id, password=pass_hash, role_id=role_object.user_role_id)
         self.db.add(new_user)
         self.db.commit()
         return new_user

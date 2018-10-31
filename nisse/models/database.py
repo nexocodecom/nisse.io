@@ -32,6 +32,7 @@ class User(Base):
 
     user_id = Column(Integer, primary_key=True)
     username = Column(String(length=100), unique=True)
+    slack_user_id = Column(String(length=100), unique=True)
     first_name = Column(String(length=100))
     last_name = Column(String(length=100))
     password = Column(String(length=80))

@@ -20,7 +20,7 @@ from nisse.services.reminder_service import ReminderService
 from nisse.services.report_service import ReportService
 from nisse.services.xlsx_document_service import XlsxDocumentService
 from nisse.utils.date_helper import get_start_end_date, get_float_duration
-from nisse.utils import slack_model_helper
+from nisse.utils import slack_model_helper as smh
 from nisse.utils import string_helper
 from nisse.utils.validation_helper import *
 import os
@@ -51,12 +51,6 @@ class SlackCommandService:
         self.reminder_service = reminder_service
         self.dialog_schema = DialogSchema()
 
-    @staticmethod
-    def create_time_reporting_dialog(default_project_id: str, project_options_list, default_day) -> Dict:
-        dialog: Dialog = slack_model_helper.create_time_reporting_dialog_model(default_day, default_project_id,
-                                                                               project_options_list)
-        return dialog.dump()
-
     def submit_time_dialog(self, command_body, arguments, action):
         trigger_id = command_body['trigger_id']
         slack_user_id = command_body['user_id']
@@ -72,8 +66,9 @@ class SlackCommandService:
         user_default_project_id: str = self.get_default_project_id(project_options_list[0].value, slack_user_details)
         today = date.today().isoformat()
 
-        dialog: Dict = SlackCommandService.create_time_reporting_dialog(user_default_project_id, project_options_list,
-                                                                        today)
+        dialog: Dict = smh.create_time_reporting_dialog_model(today, user_default_project_id,
+                                                                                   project_options_list).dump()
+
         resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog)
         if not resp["ok"]:
             self.logger.error("Can't open dialog submit time: " + resp.get("error"))
@@ -162,9 +157,9 @@ class SlackCommandService:
             inner_user_id = self.extract_slack_user_id(user)
             user = self.get_user_by_slack_user_id(inner_user_id)
 
-            message_text = "I'm going to list saved time records for *" + user.first_name + "*..."
+            message_text = "I'm going to list saved time records for *" + string_helper.get_user_name(user) + "*..."
 
-        return slack_model_helper.create_select_period_for_listing_model(command_body, inner_user_id,
+        return smh.create_select_period_for_listing_model(command_body, inner_user_id,
                                                                          message_text).dump()
 
     def list_command_time_range_selected(self, form: ListCommandPayload):
@@ -172,7 +167,7 @@ class SlackCommandService:
         inner_user_id = action.name
         user_id = form.user.id
 
-        user = self.get_user_by_slack_user_id(inner_user_id)
+        user = self.get_user_by_slack_user_id(user_id)
 
         if inner_user_id != user_id and user.role.role != 'admin':
             return Message(
@@ -186,6 +181,7 @@ class SlackCommandService:
         start_end = get_start_end_date(time_range_selected)
 
         time_records = self.user_service.get_user_time_entries(user.user_id, start_end[0], start_end[1])
+        time_records = sorted(time_records, key=lambda te: te.report_date, reverse=True)
 
         if len(time_records) == 0:
             return Message(
@@ -243,7 +239,7 @@ class SlackCommandService:
 
             self.get_user_by_slack_user_id(inner_user_id)
 
-        return slack_model_helper.create_select_period_for_reporting_model(command_body, inner_user_id,
+        return smh.create_select_period_for_reporting_model(command_body, inner_user_id,
                                                                            message_text).dump()
 
     def report_dialog(self, form: ReportGenerateDialogPayload):
@@ -263,7 +259,7 @@ class SlackCommandService:
         # admin see users list
         user = self.get_user_by_slack_user_id(form.user.id)
 
-        dialog: Dialog = slack_model_helper.create_generate_report_dialog_model(start_end[0], project_options_list,
+        dialog: Dialog = smh.create_generate_report_dialog_model(start_end[0], project_options_list,
                                                                                 start_end[1])
 
         if action.name:
@@ -271,7 +267,7 @@ class SlackCommandService:
 
         if user.role.role == 'admin':
             users = self.user_service.get_users()
-            user_options_list = [LabelSelectOption(label=p.first_name, value=p.user_id) for p in users]
+            user_options_list = [LabelSelectOption(label=string_helper.get_user_name(p), value=p.user_id) for p in users]
             dialog.elements.append(
                 Element(label="User", value=(prompted_user.user_id if prompted_user else None),
                         optional='true', type="select", name='user', placeholder="Select user", options=user_options_list))
@@ -356,7 +352,7 @@ class SlackCommandService:
 
         day_configuration = self.reminder_service.get_user_reminder_config(user)
 
-        return slack_model_helper.create_reminder_info_model(command_name, day_configuration).dump()
+        return smh.create_reminder_info_model(command_name, day_configuration).dump()
 
     def reminder_set(self, command_body, arguments, action):
         user = self.get_user_by_slack_user_id(command_body['user_id'])
@@ -370,11 +366,12 @@ class SlackCommandService:
                                 message="incorrect format. Examples: /reminder set 15:15 /reminder set mon:15:15;tue:13:14;sat:18:10 ")
 
     def delete_command_message(self, command_body, arguments, action):
-        project_options_list: List[TextSelectOption] = self.get_projects_option_list_as_text()
-        user_default_project_id = self.get_default_project_id(project_options_list[0].value,
-                                                              self.get_user_by_slack_user_id(command_body['user_id']))
+        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
 
-        return slack_model_helper.create_select_project_model(project_options_list, user_default_project_id).dump()
+        project_options_list: List[TextSelectOption] = self.get_projects_option_list_as_text(user.user_id)
+        user_default_project_id = self.get_default_project_id(project_options_list[0].value, user)
+
+        return smh.create_select_project_model(project_options_list, user_default_project_id).dump()
 
     def delete_command_project_selected(self, form: Payload):
 
@@ -389,13 +386,9 @@ class SlackCommandService:
                                                                                          selected_project.project_id)
 
         if len(last_time_entries) == 0:
-            return Message(
-                text="Can't find any time entries for *" + selected_project.name + "* :face_with_rolling_eyes:",
-                response_type="ephemeral",
-                mrkdwn=True
-            ).dump()
+            return smh.create_delete_not_found_message(selected_project.name).dump()
 
-        return slack_model_helper.create_select_time_entry_model(last_time_entries, selected_project).dump()
+        return smh.create_select_time_entry_model(last_time_entries, selected_project).dump()
 
     def delete_command_time_entry_selected(self, form: Payload):
         time_entry_id_selected = form.actions[0].selected_options[0].value
@@ -404,7 +397,7 @@ class SlackCommandService:
 
         time_entry: TimeEntry = self.user_service.get_time_entry(user.user_id, time_entry_id_selected)
 
-        return slack_model_helper.create_delete_time_entry_model(time_entry).dump()
+        return smh.create_delete_time_entry_model(time_entry).dump()
 
     def delete_command_time_entry_confirm_remove(self, form: Payload):
         action_selected = form.actions[0]
@@ -413,15 +406,9 @@ class SlackCommandService:
 
             self.user_service.delete_time_entry(user.user_id, int(action_selected.value))
 
-            return Message(
-                text="Time entry removed! :wink:",
-                response_type="ephemeral",
-            ).dump()
+            return smh.create_delete_successful_message().dump()
 
-        return Message(
-            text="Canceled :wink:",
-            response_type="ephemeral",
-        ).dump()
+        return smh.create_delete_cancel_message().dump()
 
     def submit_time_dialog_reminder(self, form: Payload):
         self.open_time_reporting_dialog(form.user.id, form.trigger_id)
@@ -441,25 +428,30 @@ class SlackCommandService:
         projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
         return [LabelSelectOption(p.name, p.project_id) for p in projects]
 
-    def get_projects_option_list_as_text(self) -> List[TextSelectOption]:
+    def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
         # todo cache it globally e.g. Flask-Cache
-        projects = self.project_service.get_projects()
+        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
         return [TextSelectOption(p.name, p.project_id) for p in projects]
 
     def get_user_by_slack_user_id(self, slack_user_id):
 
-        slack_user_details = self.slack_client.api_call(
-            "users.info",
-            user=slack_user_id
-        )
+        user = self.user_service.get_user_by_slack_id(slack_user_id)
 
-        if not slack_user_details['ok']:
-            self.logger.error("Can't get user details. Error: " + slack_user_details.get("error"))
-            raise SlackUserException('Retrieve slack user detail failed, user_id: ' + slack_user_id)
+        if not user:
+            slack_user_details = self.slack_client.api_call(
+                "users.info",
+                user=slack_user_id
+            )
 
-        return self.get_or_add_user(slack_user_details['user']['profile']['email'],
-                                    slack_user_details['user']['profile']['real_name_normalized'],
-                                    slack_user_details['user']['is_owner'])
+            if not slack_user_details['ok']:
+                self.logger.error("Can't get user details. Error: " + slack_user_details.get("error"))
+                raise SlackUserException('Retrieve slack user detail failed, user_id: ' + slack_user_id)
+
+            user = self.get_or_add_user(slack_user_details['user']['profile']['email'],
+                                 slack_user_details['user']['profile']['real_name_normalized'],
+                                 slack_user_id,
+                                 slack_user_details['user']['is_owner'])
+        return user
 
     def get_default_project_id(self, first_id: str, user) -> str:
         if user is not None:
@@ -471,13 +463,18 @@ class SlackCommandService:
 
     @staticmethod
     def help_command_message(command_body, arguments, action):
-        return slack_model_helper.create_help_command_message(command_body).dump()
+        return smh.create_help_command_message(command_body).dump()
 
-    def get_or_add_user(self, user_email, user_name, is_owner=False):
+    def get_or_add_user(self, user_email, user_name, slack_user_id, is_owner=False):
         user = self.user_service.get_user_by_email(user_email)
         if user is None:
             user_role = USER_ROLE_ADMIN if is_owner else USER_ROLE_USER
-            user = self.user_service.add_user(user_email, user_name, self.user_service.get_default_password(), user_role)
+            names = user_name.split(" ")
+            first_name = names[0]
+            last_name = None
+            if len(names) > 1:
+                last_name = names[1]
+            user = self.user_service.add_user(user_email, first_name, last_name, self.user_service.get_default_password(), slack_user_id, user_role)
             self.project_service.assign_user_to_project(Project(project_id=1), user)
             self.reminder_service.set_user_reminder_config(user, DEFAULT_REMIND_TIME_FOR_NEWLY_ADDED_USER)
         return user
