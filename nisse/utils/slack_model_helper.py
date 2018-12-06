@@ -7,7 +7,7 @@ from nisse.models.slack.message import Attachment, Message, Action, TextSelectOp
 from nisse.models.slack.payload import ListCommandPayload, TimeReportingFormPayload, ReportGenerateFormPayload, ReportGenerateDialogPayload, DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
 from nisse.utils import string_helper
 from nisse.utils.date_helper import TimeRanges
-
+from flask import current_app
 
 def create_help_command_message(command_body) -> Message:
     command_name = command_body["command"]
@@ -148,7 +148,7 @@ def create_reminder_info_model(command_name, day_configuration):
     attachments.append(
         Attachment(
             text="",
-            footer="Use *{0} reminder set mon:hh:mm,wed:off* to change settings".format(command_name),
+            footer= current_app.config['MESSAGE_REMINDER_SET_TIP'].format(command_name),
             mrkdwn_in=["text", "footer"]
         )
     )

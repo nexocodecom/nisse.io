@@ -26,7 +26,7 @@ from nisse.utils.validation_helper import *
 import os
 from werkzeug.utils import secure_filename
 import uuid
-from flask import current_app
+from flask import Flask, current_app
 
 DAILY_HOUR_LIMIT = 20
 DEFAULT_REMIND_TIME_FOR_NEWLY_ADDED_USER = "16:00"
@@ -83,14 +83,10 @@ class SlackCommandService:
             user_id=form.user.id
         )
 
-        # continue work in separate thread to not delay response
-        task = Thread(target=self.save_submitted_time_task, args={time_record})
-        task.start()
-
-        # return response to slack as soon as possible
-        return None
+        self.save_submitted_time_task(time_record)
 
     def save_submitted_time_task(self, time_record: TimeRecordDto):
+
         user = self.get_user_by_slack_user_id(time_record.user_id)
 
         im_channel = self.slack_client.api_call("im.open", user=time_record.user_id)
@@ -132,7 +128,7 @@ class SlackCommandService:
                       'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name,
             text="_" + time_record.comment + "_",
             mrkdwn_in=["text", "footer"],
-            footer="Use */ni list* to view submitted records"
+            footer=current_app.config['MESSAGE_SUBMIT_TIME_TIP']
         ).dump()]
 
         resp = self.slack_client.api_call(
@@ -168,6 +164,7 @@ class SlackCommandService:
         user_id = form.user.id
 
         user = self.get_user_by_slack_user_id(user_id)
+        inner_user = self.get_user_by_slack_user_id(inner_user_id)
 
         if inner_user_id != user_id and user.role.role != 'admin':
             return Message(
@@ -180,7 +177,7 @@ class SlackCommandService:
 
         start_end = get_start_end_date(time_range_selected)
 
-        time_records = self.user_service.get_user_time_entries(user.user_id, start_end[0], start_end[1])
+        time_records = self.user_service.get_user_time_entries(inner_user.user_id, start_end[0], start_end[1])
         time_records = sorted(time_records, key=lambda te: te.report_date, reverse=True)
 
         if len(time_records) == 0:
@@ -216,7 +213,7 @@ class SlackCommandService:
         if inner_user_id == user_id:
             projects['footer'] = Attachment(
                 text="",
-                footer="Use */ni delete* to remove record",
+                footer=current_app.config['MESSAGE_LIST_TIME_TIP'],
                 mrkdwn_in=["footer"]
             )
 

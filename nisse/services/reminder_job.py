@@ -36,17 +36,10 @@ def remind(logger, config):
 
     for user in users:
         logger.info('Sending notification for user: ' + user.username)
-        user_details = slack_client.api_call(
-            "users.lookupByEmail",
-            email=user.username
-        )
-
-        if not user_details["ok"]:
-            logger.error("Can't get user details for user id: " + str(user.user_id) + '. ' + user_details["error"])
 
         im_channel = slack_client.api_call(
             "im.open",
-            user=user_details['user']['id'])
+            user=user.slack_user_id)
 
         if not im_channel["ok"]:
             logger.error("Can't open im channel for: " + str(user.user_id) + '. ' + im_channel["error"])
@@ -74,7 +67,7 @@ def remind(logger, config):
                 },
                 {
                     "text": "",
-                    "footer": "Use */ni reminder* to check yours reminder settings",
+                    "footer": config['MESSAGE_REMINDER_RUN_TIP'],
                     "mrkdwn_in": ["footer"]
                 }
             ],
@@ -82,6 +75,6 @@ def remind(logger, config):
         )
 
         if not resp["ok"]:
-            logger.error("Can't send reminder message to user id: " + str(user.user_id) + '. ' + user_details["error"])
+            logger.error("Can't send reminder message to user id: " + str(user.user_id) + '. ' + resp["error"])
 
     logger.info('Reminder job finished: ' + str(datetime.utcnow().time()))

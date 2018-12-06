@@ -87,11 +87,10 @@ class XlsxDocumentService(object):
 
                 basic = 0
                 deficit = 0
-                overtime = 0
                 if not is_weekend(date) and time_reported:
                     basic = time_reported if time_reported <= 8 else 8
                     deficit = 8 - basic if time_reported <= 8 else 0
-                    overtime = time_reported - basic
+                overtime = time_reported - basic
                 total_overtime += overtime
                 total_deficit += deficit
                 total_basic += basic
