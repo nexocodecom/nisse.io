@@ -47,7 +47,7 @@ class ReminderService(object):
                     if key in keys:
                         user.__setattr__(value, time_from_param)
         except Exception as e:
-            self.logger.warning('Incorrect format sent:{0} from user:{1}. Exception: '.format(config, user, str(e)))
+            self.logger.warning('Incorrect format sent:{0} from user:{1}. Exception: {2}'.format(config, user, str(e)))
             return False
 
         self.user_service.update_remind_times(user)
@@ -73,7 +73,10 @@ class ReminderService(object):
         user_dt = user_zone.localize(naive, is_dst=None)
         utc_dt = user_dt.astimezone(pytz.utc)
 
-        return utc_dt.time()
+        # calculate daylight saving timedelta
+        dst_delta = user_zone.dst(naive)
+
+        return (utc_dt - dst_delta).time()
 
     def utc_time_to_local_time_string(self, utc):
         if utc is None:
