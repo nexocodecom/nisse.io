@@ -38,10 +38,11 @@ class SlackCommandServiceTests(unittest.TestCase):
     @mock.patch('nisse.services.UserService')
     @mock.patch('slackclient.SlackClient')
     @mock.patch('flask.config.Config')
-    def setUp(self, mock_project_service, mock_user_service, mock_slack_client, config):
+    def setUp(self, mock_project_service, mock_user_service, mock_slack_client, config_mock):
         self.mock_user_service = mock_user_service
         self.mock_project_service = mock_project_service
         self.mock_slack_client = mock_slack_client
+        self.config_mock = config_mock
 
         self.mock_project_service.get_projects.return_value = [Project(name='TestPr', project_id=1),
                                                                Project(name='TestPr2', project_id=2)]
@@ -55,7 +56,7 @@ class SlackCommandServiceTests(unittest.TestCase):
                                                          mock.create_autospec(ReportService),
                                                          mock.create_autospec(XlsxDocumentService),
                                                          mock.create_autospec(ReminderService),
-                                                         config)
+                                                         config_mock)
 
     def test_submit_time_dialog_for_new_user_should_call_slack_api_and_return(self):
         # arrange
