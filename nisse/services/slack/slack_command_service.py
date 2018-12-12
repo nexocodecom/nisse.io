@@ -27,6 +27,7 @@ import os
 from werkzeug.utils import secure_filename
 import uuid
 from flask import Flask, current_app
+from flask.config import Config
 
 DAILY_HOUR_LIMIT = 20
 DEFAULT_REMIND_TIME_FOR_NEWLY_ADDED_USER = "16:00"
@@ -41,7 +42,7 @@ class SlackCommandService:
     @inject
     def __init__(self, logger: logging.Logger, project_service: ProjectService, user_service: UserService,
                  slack_client: SlackClient, print_db: ReportService, print_output: XlsxDocumentService,
-                 reminder_service: ReminderService):
+                 reminder_service: ReminderService, config: Config):
         self.logger = logger
         self.slack_client = slack_client
         self.project_service = project_service
@@ -50,6 +51,7 @@ class SlackCommandService:
         self.print_output = print_output
         self.reminder_service = reminder_service
         self.dialog_schema = DialogSchema()
+        self.config = config
 
     def submit_time_dialog(self, command_body, arguments, action):
         trigger_id = command_body['trigger_id']
@@ -128,7 +130,7 @@ class SlackCommandService:
                       'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name,
             text="_" + time_record.comment + "_",
             mrkdwn_in=["text", "footer"],
-            footer=current_app.config['MESSAGE_SUBMIT_TIME_TIP']
+            footer=self.config['MESSAGE_SUBMIT_TIME_TIP']
         ).dump()]
 
         resp = self.slack_client.api_call(
@@ -213,7 +215,7 @@ class SlackCommandService:
         if inner_user_id == user_id:
             projects['footer'] = Attachment(
                 text="",
-                footer=current_app.config['MESSAGE_LIST_TIME_TIP'],
+                footer=self.config.config['MESSAGE_LIST_TIME_TIP'],
                 mrkdwn_in=["footer"]
             )
 
@@ -424,7 +426,7 @@ class SlackCommandService:
         return Message().dump()
 
     def get_projects_option_list_as_label(self, user_id=None) -> List[LabelSelectOption]:
-        # todo cache it globally e.g. Flask-Cache
+        # todo cache it globally e.g. Flask-Cache        
         projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
         return [LabelSelectOption(p.name, p.project_id) for p in projects]
 

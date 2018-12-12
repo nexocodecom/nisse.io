@@ -18,14 +18,13 @@ class ErrorsTests(unittest.TestCase):
     def test_form_marshalling(self):
         team = Team("TB32", "witalinc")
         user = SlackUser("UBXJ", "radoslaw.kaminski")
-        channel = Channel("DBWP", "directmessage")
-        submission = TimeReportingForm("2", "2018-07-27", "8", "test")
-        form = Payload("dialog_submission", "3opq", "123.45", team, user, channel, "callback_id", "http://", None, submission,"trigger_id", "messages_ts")
+        channel = Channel("DBWP", "directmessage")        
+        form = Payload("dialog_submission", "3opq", "123.45", team, user, channel, "http://", None, "trigger_id", "messages_ts")
         schema = PayloadSchema()
         result = schema.dump(form)
         print(result)
-        pay: Payload = schema.load(result)
-        print(pay.callback_id)
+        pay: Payload = schema.load(result.data)        
+        print(pay.data['trigger_id'])
 
 
 

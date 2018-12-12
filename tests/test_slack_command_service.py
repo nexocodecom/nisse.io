@@ -8,10 +8,10 @@ from nisse.models.slack.payload import ListCommandPayload, SlackUser, Channel, A
 from nisse.services import SlackCommandService
 from nisse.services.reminder_service import ReminderService
 from nisse.services.report_service import ReportService
-from nisse.services.slack.slack_command_service import TimeRanges
-from decimal import *
-
+from nisse.utils.date_helper import TimeRanges, get_start_end_date
+from decimal import Decimal
 from nisse.services.xlsx_document_service import XlsxDocumentService
+from flask.config import Config
 
 
 def get_mocked_user():
@@ -37,10 +37,12 @@ class SlackCommandServiceTests(unittest.TestCase):
     @mock.patch('nisse.services.ProjectService')
     @mock.patch('nisse.services.UserService')
     @mock.patch('slackclient.SlackClient')
-    def setUp(self, mock_project_service, mock_user_service, mock_slack_client):
+    @mock.patch('flask.config.Config')
+    def setUp(self, mock_project_service, mock_user_service, mock_slack_client, config_mock):
         self.mock_user_service = mock_user_service
         self.mock_project_service = mock_project_service
         self.mock_slack_client = mock_slack_client
+        self.config_mock = config_mock
 
         self.mock_project_service.get_projects.return_value = [Project(name='TestPr', project_id=1),
                                                                Project(name='TestPr2', project_id=2)]
@@ -53,7 +55,8 @@ class SlackCommandServiceTests(unittest.TestCase):
                                                          mock_slack_client,
                                                          mock.create_autospec(ReportService),
                                                          mock.create_autospec(XlsxDocumentService),
-                                                         mock.create_autospec(ReminderService))
+                                                         mock.create_autospec(ReminderService),
+                                                         config_mock)
 
     def test_submit_time_dialog_for_new_user_should_call_slack_api_and_return(self):
         # arrange
@@ -79,12 +82,14 @@ class SlackCommandServiceTests(unittest.TestCase):
             "user_id": "user123"
         }
 
+        self.mock_project_service.get_projects.return_value = [Project(), Project()]
+        self.mock_project_service.get_projects_by_user.return_value = [Project(), Project()]
+
         # act
-        result = self.slack_command_service.submit_time_dialog(command_body, None, None)
+        self.slack_command_service.submit_time_dialog(command_body, None, None)
 
         # assert
-        self.assertEqual(self.mock_slack_client.api_call.call_count, 2)
-        self.assertEqual(result, (None, 204))
+        self.assertEqual(self.mock_slack_client.api_call.call_count, 1)        
 
     def test_submit_time_dialog_for_existed_user_should_set_default_project(self):
         # arrange
@@ -115,14 +120,16 @@ class SlackCommandServiceTests(unittest.TestCase):
             "user_id": "user123"
         }
 
+        self.mock_project_service.get_projects.return_value = [Project(), Project()]
+        self.mock_project_service.get_projects_by_user.return_value = [Project(), Project()]
+
         # act
-        result = self.slack_command_service.submit_time_dialog(command_body, None, None)
+        self.slack_command_service.submit_time_dialog(command_body, None, None)
 
         # assert
-        self.assertEqual(self.mock_slack_client.api_call.call_count, 2)
-        self.assertEqual(result, (None, 204))
+        self.assertEqual(self.mock_slack_client.api_call.call_count, 1)        
         # check selected project for dialog
-        self.assertEqual(self.dialog["elements"][0]["value"], users_last_time_entry.project.project_id)
+        self.assertEqual(int(self.dialog["elements"][0]["value"]), users_last_time_entry.project.project_id)
 
     def test_save_submitted_time_should_add_user_if_not_exist(self):
         # arrange
@@ -156,15 +163,15 @@ class SlackCommandServiceTests(unittest.TestCase):
         self.mock_user_service.add_user.return_value = mock_user
 
         usr: SlackUser = SlackUser(id="usr1", name="Test")
-        sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "-1", "task done")
+        sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "-1", "0", "comment")
         payload: TimeReportingFormPayload = TimeReportingFormPayload(None, None, None, None, usr, None, None, sub)
         # act
-        result = self.slack_command_service.save_submitted_time(payload)
-        # assert
-        self.assertEqual((None, 204), result)
+        self.slack_command_service.save_submitted_time(payload)
+
+        # assert        
         time.sleep(0.5)
-        self.mock_user_service.add_user.assert_called_once()
-        self.assertEqual(3, self.mock_slack_client.api_call.call_count)
+        self.mock_project_service.assign_user_to_project.assert_called_once()
+        self.assertEqual(2, self.mock_slack_client.api_call.call_count)
 
     def test_save_submitted_time_should_return_error_if_exceed_daily_hours_limit(self):
         # arrange
@@ -198,12 +205,12 @@ class SlackCommandServiceTests(unittest.TestCase):
         self.mock_user_service.get_user_time_entries.return_value = [get_mocked_time_entry(), get_mocked_time_entry()]
 
         usr: SlackUser = SlackUser(id="usr1", name="Test")
-        sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "8", "task done")
+        sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "8", "15", "comment")
         payload: TimeReportingFormPayload = TimeReportingFormPayload(None, None, None, None, usr, None, None, sub)
         # act
-        result = self.slack_command_service.save_submitted_time(payload)
-        # assert
-        self.assertEqual(result, (None, 204))
+        self.slack_command_service.save_submitted_time(payload)
+
+        # assert        
         time.sleep(0.5)
         self.assertEqual(len(sent_chat_msgs), 1)
         self.assertEqual(sent_chat_msgs[0], "Sorry, but You can't submit more than 20 hours for one day.")
@@ -294,28 +301,26 @@ class SlackCommandServiceTests(unittest.TestCase):
         # act
         result = self.slack_command_service.list_command_time_range_selected(payload)
         # assert
-        self.assertEqual(result[0]["text"], "These are hours submitted by *You* for `" + TimeRanges.today.value + "`")
-        self.assertEqual(len(result[0]["attachments"]), 2)
-        self.assertEqual(result[0]["attachments"][0]["title"], "TestPr")
-
+        self.assertEqual(result["text"], "These are hours submitted by *You* for `" + TimeRanges.today.value + "`")
+        self.assertEqual(len(result["attachments"]), 3)
+        self.assertEqual(result["attachments"][0]["title"], "TestPr")
+    
     def test_get_start_end_date_should_return_correct_start_end_date(self):
         # arrange
-        with mock.patch('nisse.services.slack.slack_command_service.dt') as mock_datetime:
-            mock_datetime.now.return_value = datetime(2018, 5, 14)
-            mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+        date = datetime(2018, 5, 14)        
 
-            # act
-            today_start_end = SlackCommandService.get_start_end_date(TimeRanges.today.value)
-            yesterday_start_end = SlackCommandService.get_start_end_date(TimeRanges.yesterday.value)
-            this_week_start_end = SlackCommandService.get_start_end_date(TimeRanges.this_week.value)
-            previous_week_start_end = SlackCommandService.get_start_end_date(TimeRanges.previous_week.value)
-            this_month_start_end = SlackCommandService.get_start_end_date(TimeRanges.this_month.value)
-            previous_month_start_end = SlackCommandService.get_start_end_date(TimeRanges.previous_month.value)
-
-            # assert
-            self.assertEqual(today_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 14).date()))
-            self.assertEqual(yesterday_start_end, (datetime(2018, 5, 13).date(), datetime(2018, 5, 13).date()))
-            self.assertEqual(this_week_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 20).date()))
-            self.assertEqual(previous_week_start_end, (datetime(2018, 5, 7).date(), datetime(2018, 5, 13).date()))
-            self.assertEqual(this_month_start_end, (datetime(2018, 5, 1).date(), datetime(2018, 5, 31).date()))
-            self.assertEqual(previous_month_start_end, (datetime(2018, 4, 1).date(), datetime(2018, 4, 30).date()))
+        # act
+        today_start_end = get_start_end_date(TimeRanges.today.value, date)
+        yesterday_start_end = get_start_end_date(TimeRanges.yesterday.value, date)
+        this_week_start_end = get_start_end_date(TimeRanges.this_week.value, date)
+        previous_week_start_end = get_start_end_date(TimeRanges.previous_week.value, date)
+        this_month_start_end = get_start_end_date(TimeRanges.this_month.value, date)
+        previous_month_start_end = get_start_end_date(TimeRanges.previous_month.value, date)
+        
+        # assert
+        self.assertEqual(today_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 14).date()))
+        self.assertEqual(yesterday_start_end, (datetime(2018, 5, 13).date(), datetime(2018, 5, 13).date()))
+        self.assertEqual(this_week_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 20).date()))
+        self.assertEqual(previous_week_start_end, (datetime(2018, 5, 7).date(), datetime(2018, 5, 13).date()))
+        self.assertEqual(this_month_start_end, (datetime(2018, 5, 1).date(), datetime(2018, 5, 31).date()))
+        self.assertEqual(previous_month_start_end, (datetime(2018, 4, 1).date(), datetime(2018, 4, 30).date()))
