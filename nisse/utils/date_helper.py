@@ -56,4 +56,7 @@ def is_weekend(date):
     return date.weekday() >= 5
 
 def parse_formatted_date(date):
-        return datetime.strptime(date, '%Y-%m-%d').date()
+    return parse_formatted_date(date).date()
+
+def parse_formatted_datetime(date):
+    return datetime.strptime(date, '%Y-%m-%d')

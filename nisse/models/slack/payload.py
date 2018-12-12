@@ -64,9 +64,9 @@ class Action(object):
 
 class RequestFreeDaysForm(object):
 
-    def __init__(self, start_day, end_day, reason):
-        self.start_day = start_day
-        self.end_day = end_day
+    def __init__(self, start_date, end_date, reason):
+        self.start_date = start_date
+        self.end_date = end_date
         self.reason = reason
 
 

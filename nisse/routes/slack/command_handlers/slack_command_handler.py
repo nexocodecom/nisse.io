@@ -9,6 +9,7 @@ import logging
 from nisse.models.slack.payload import Payload
 from nisse.services.exception import DataException, SlackUserException
 from nisse.models.slack.dialog import Dialog
+from datetime import datetime
 
 USER_ROLE_USER = 'user'
 USER_ROLE_ADMIN = 'admin'
@@ -74,3 +75,7 @@ class SlackCommandHandler(ABC):
         resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog)
         if not resp["ok"]:
             self.logger.error("Can't open dialog submit time: " + resp.get("error"))
+
+
+    def current_date(self) -> datetime:
+        return datetime.now()
