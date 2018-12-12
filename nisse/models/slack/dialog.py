@@ -18,7 +18,7 @@ class Dialog(object):
 
 class Element(object):
 
-    def __init__(self, label, type, name, placeholder=None, value=None, subtype=None, hint=None, options: List[LabelSelectOption]=None, optional=None):
+    def __init__(self, label, type, name, placeholder=None, value=None, subtype=None, hint=None, options: List[LabelSelectOption] = None, optional=None):
         self.label = label
         self.type = type
         self.name = name

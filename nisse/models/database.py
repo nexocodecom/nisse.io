@@ -40,6 +40,7 @@ class User(Base):
     role = relationship("UserRole", back_populates="users_in_role")
     user_projects = relationship("UserProject", back_populates="user")
     user_time_entries = relationship('TimeEntry', back_populates='user')
+    user_days_off = relationship('Dayoff', back_populates='user')
     remind_time_monday = Column(Time, nullable=True)
     remind_time_tuesday = Column(Time, nullable=True)
     remind_time_wednesday = Column(Time, nullable=True)
@@ -141,6 +142,16 @@ class Token(Base):
     refresh_token = Column(String(255), unique=True)
     expires = Column(DATETIME)
     scopes = ['']
+
+
+class Dayoff(Base):
+    __tablename__ = "holidays"
+    dayoff_id = Column(Integer, primary_key=True)
+    start_date = Column(DATETIME, nullable=False)
+    end_date = Column(DATETIME, nullable=False)
+    reason = Column(String(255), nullable=True)
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
+    user = relationship('User', back_populates='user_days_off')
 
     
 

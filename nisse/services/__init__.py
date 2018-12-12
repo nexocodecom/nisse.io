@@ -16,8 +16,7 @@ from nisse.services.reminder_service import ReminderService
 from nisse.services.slack.slack_command_service import SlackCommandService
 from nisse.services.token_service import TokenService
 from nisse.services.user_service import UserService
-from nisse.services.user_service import UserService
-
+from nisse.services.day_off_service import DayOffService
 
 def configure_container(binder: Binder):
 
@@ -36,6 +35,8 @@ def configure_container(binder: Binder):
     binder.bind(UserService, scope=request)
 
     binder.bind(TokenService, scope=request)
+
+    binder.bind(DayOffService, scope=request)
 
     binder.bind(SlackClient, to=SlackClient(binder.injector.get(Flask).config['SLACK_BOT_ACCESS_TOKEN']))
 
