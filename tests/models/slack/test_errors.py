@@ -11,5 +11,6 @@ class ErrorsTests(unittest.TestCase):
                   Error(name="Test Name 2", error="Unknown Test Error 2")]
         schema = ErrorSchema(many=True)
         result = schema.dump(errors).data
-        jsonify({'errors': result})
-        # pprint({'errors': result})
+
+        expectedResult = [{'error': 'Unknown Test Error 1', 'name': 'Test Name 1'}, {'error': 'Unknown Test Error 2', 'name': 'Test Name 2'}]
+        self.assertEqual(result, expectedResult)

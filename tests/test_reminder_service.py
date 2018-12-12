@@ -50,7 +50,7 @@ class ReminderServiceTests(unittest.TestCase):
         service = ReminderService(self.mock_user_service, logging.getLogger(), 'Europe/Warsaw')
 
         # Act, Assert
-        time = service.naive_time_to_utc('15:00')
+        time = service.naive_time_to_utc('14:00')
         self.assertEqual(time, datetime.datetime(1900, 1, 1, 13, 0).time())
 
         # Act, Assert
@@ -62,4 +62,4 @@ class ReminderServiceTests(unittest.TestCase):
         service = ReminderService(self.mock_user_service, logging.getLogger(),'Europe/Warsaw')
         time = service.utc_time_to_local_time_string(datetime.datetime(1900, 1, 1, 13, 0).time())
         # Assert
-        self.assertEqual(time, "15:00")
+        self.assertEqual(time, "14:00")
