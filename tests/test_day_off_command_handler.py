@@ -91,3 +91,18 @@ class TestDayOffCommanHandler(TestCase):
         except ValidationError as err:
             self.assertEqual(err.messages, ['End date must not be lower than start date'])
             self.assertEqual(err.field_names, ['end_date'])
+
+    def test_should_succeed(self):
+        #Arrange
+        request_form = RequestFreeDaysForm(start_date='2018-12-19', end_date='2018-12-24', reason='')
+        payload = RequestFreeDaysPayload('', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
+        self.handler.current_date = MagicMock(return_value=datetime(2018, 12, 13))
+        self.handler.get_user_by_slack_user_id = MagicMock()
+
+        #Act
+        self.handler.handle(payload)
+
+        #Assert
+        self.assertEqual(1, self.handler.get_user_by_slack_user_id.call_count)
+        self.assertEqual(1, self.mock_dayoff_service.get_user_days_off_since.call_count)
+        self.assertEqual(1, self.mock_dayoff_service.insert_user_day_off.call_count)

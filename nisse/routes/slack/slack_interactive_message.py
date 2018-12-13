@@ -11,16 +11,18 @@ from nisse.models.slack.payload import Payload, GenericPayloadSchema, DeleteConf
 from nisse.services.slack.slack_command_service import SlackCommandService
 from nisse.routes.slack.command_handlers import SlackCommandHandler
 from nisse.utils import string_helper
+from logging import Logger
 
 
 class SlackDialogSubmission(Resource):
 
     @inject
-    def __init__(self, app: Flask, slack_command_service: SlackCommandService, injector: Injector):
+    def __init__(self, logger: Logger, app: Flask, slack_command_service: SlackCommandService, injector: Injector):
         self.app = app
         self.slack_command_service = slack_command_service
         self.schema = GenericPayloadSchema()
         self.injector = injector
+        self.logger = logger
 
     def post(self):
 
@@ -38,13 +40,29 @@ class SlackDialogSubmission(Resource):
 
         else:
             payload: Payload = result.data
+
+            #this one is for future refactor of slackcommandservice since it is growing bigger and bigger and will eventually turn into god class
             if payload.handler_type is not None:
                 return self.try_use_handler(payload)
             else:
                 result = payload.handle(self.slack_command_service)
             return (result, 200) if result else (None, 204)
 
+    #for refactor purpose
     def try_use_handler(self, payload: Payload):
-        handler: SlackCommandHandler = self.injector.get(payload.handler_type())
-        result = handler.handle(payload)
-        return (result, 200) if result else (None, 204)
+        try:
+            handler: SlackCommandHandler = self.injector.get(
+                payload.handler_type())
+            result = handler.handle(payload)
+            return (result, 200) if result else (None, 204)
+        except ValidationError as e:
+            errors = []
+            if len(e.field_names) == len(e.messages):
+                for idx, err in enumerate(e.messages):
+                    errors.append({"error": err, "name": e.field_names[idx]})
+                return ({"errors": errors}, 200)
+
+            return ({"errors": e.messages}, 200)
+        except:
+            self.logger.log('Fatal', 'Fatal error: %s', exc_info=1)
+            return ('Internal servier error', 500)

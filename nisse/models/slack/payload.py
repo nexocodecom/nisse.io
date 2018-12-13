@@ -324,8 +324,8 @@ class RemindTimeReportBtnPayloadSchema(PayloadSchema):
         return RemindTimeReportBtnPayload(**data)
 
 class RequestFreeDaysFormSchema(PayloadSchema):    
-    start_day = fields.String(validate=check_date)
-    end_day = fields.String(validate=check_date)
+    start_date = fields.String(validate=check_date)
+    end_date = fields.String(validate=check_date)
     reason = fields.String(allow_none=True)
 
     @post_load

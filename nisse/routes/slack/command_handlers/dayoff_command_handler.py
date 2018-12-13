@@ -37,7 +37,7 @@ class DayOffCommandHandler(SlackCommandHandler):
         user_daysoff = self.dayoff_service.get_user_days_off_since(
             user.user_id, self.current_date())
         for dayoff in user_daysoff:
-            if dayoff.start_date < start_date:
+            if dayoff.start_date < start_date and start_date < dayoff.end_date:
                 raise ValidationError('Day off must not start within other holiday', ['start_date'])
             if end_date < dayoff.end_date:
                 raise ValidationError('Day off must not end within other holiday', ['end_date'])
@@ -49,8 +49,8 @@ class DayOffCommandHandler(SlackCommandHandler):
         nowdate = datetime.now().date()
 
         elements = [
-            Element("Start day", "text", "start_day", "specify date", nowdate),
-            Element("End day", "text", "end_day", "specify date"),
+            Element("Start day", "text", "start_date", "specify date", nowdate),
+            Element("End day", "text", "end_date", "specify date"),
             Element("Reason", "textarea", "reason", "Reason")
         ]
         return Dialog("Submit free days", "Submit", string_helper.get_full_class_name(RequestFreeDaysPayload), elements)
