@@ -12,6 +12,7 @@ from nisse.services.slack.slack_command_service import SlackCommandService
 from nisse.routes.slack.command_handlers import SlackCommandHandler
 from nisse.utils import string_helper
 from logging import Logger
+from itertools import zip_longest
 
 
 class SlackDialogSubmission(Resource):
@@ -56,13 +57,10 @@ class SlackDialogSubmission(Resource):
             result = handler.handle(payload)
             return (result, 200) if result else (None, 204)
         except ValidationError as e:
-            errors = []
-            if len(e.field_names) == len(e.messages):
-                for idx, err in enumerate(e.messages):
-                    errors.append({"error": err, "name": e.field_names[idx]})
-                return ({"errors": errors}, 200)
-
-            return ({"errors": e.messages}, 200)
+            errors = []            
+            for error, name in zip_longest(e.messages, e.field_names):
+                errors.append({"error": error, "name": name })
+            return ({"errors": errors}, 200)
         except:
             self.logger.log('Fatal', 'Fatal error: %s', exc_info=1)
             return ('Internal servier error', 500)

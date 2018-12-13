@@ -18,6 +18,8 @@ jdcal
 openpyxl
 flask_bcrypt
 python-dateutil
+google-api-python-client
+oauth2client
 marshmallow==2.15.3
 marshmallow-oneofschema==1.0.5
 CMRESHandler==1.0.0
