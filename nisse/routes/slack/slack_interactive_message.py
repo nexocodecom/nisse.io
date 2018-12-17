@@ -62,5 +62,5 @@ class SlackDialogSubmission(Resource):
                 errors.append({"error": error, "name": name })
             return ({"errors": errors}, 200)
         except:
-            self.logger.log('Fatal', 'Fatal error: %s', exc_info=1)
-            return ('Internal servier error', 500)
+            self.logger.log(50, 'Fatal error: %s', exc_info=1)
+            return ('Internal server error', 500)

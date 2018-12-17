@@ -7,6 +7,7 @@ from nisse.routes.slack.slack_command import SlackCommand
 from nisse.routes.slack.slack_interactive_message import SlackDialogSubmission
 from nisse.routes.token import access_token, revoke_token, oauth_test
 from flask_oauthlib.provider import OAuth2Provider
+from nisse.routes.google_auth import google_authorize, google_nisseoauthcallback, google_revoke
 
 
 def configure_oauth(app: Flask, oauth: OAuth2Provider):
@@ -18,13 +19,19 @@ def configure_oauth(app: Flask, oauth: OAuth2Provider):
 
 
 def configure_url_rules(app: Flask):
-    pass
+    app.add_url_rule('/google/authorize', 'authorize', google_authorize)    
+    app.add_url_rule('/google/nisseoauthcallback', 'nisseoauthcallback', google_nisseoauthcallback)   
+    app.add_url_rule('/google/authorize', 'authorize', google_authorize)   
 
 
 def configure_api(api: Api):
     # Slack endpoints
     api.add_resource(SlackCommand, '/slack/command', methods=['POST'])
     api.add_resource(SlackDialogSubmission, '/slack/dialog/submission', methods=['POST'])
+    
+    #api.add_resource(GoogleAuth, '/google/authorize', endpoint='authorize')
+    #api.add_resource(GoogleAuth, '/google/nisseoauthcallback', methods=['GET'], endpoint='nisseoauthcallback')
+    #api.add_resource(GoogleAuth, '/google/revoke', methods=['GET'], endpoint='revoke')    
 
     # TODO: uncomment if you want to provide rest API
     # api.add_resource(ProjectREST, '/projects/<int:project_id>',

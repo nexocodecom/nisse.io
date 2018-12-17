@@ -17,6 +17,8 @@ from nisse.services.slack.slack_command_service import SlackCommandService
 from nisse.services.token_service import TokenService
 from nisse.services.user_service import UserService
 from nisse.services.day_off_service import DayOffService
+from nisse.services.google_calendar_service import GoogleCalendarService
+from nisse.services.oauth_store import OAuthStore
 from flask.config import Config
 
 def configure_container(binder: Binder):
@@ -46,6 +48,12 @@ def configure_container(binder: Binder):
     binder.bind(ReminderService, to=ReminderService(binder.injector.get(UserService),
                                                     binder.injector.get(logging.Logger),
                                                     binder.injector.get(Flask).config['USERS_TIME_ZONE']))
+
+    binder.bind(GoogleCalendarService, scope=request)
     
     binder.bind(Config, to=binder.injector.get(Flask).config, scope=singleton)
+
+    binder.bind(OAuthStore, scope=singleton)
+
+    
 

@@ -60,16 +60,3 @@ def parse_formatted_date(date):
 
 def parse_formatted_datetime(date):
     return datetime.strptime(date, '%Y-%m-%d')
-
-def is_dst(time_zone):
-    """Determine whether or not Daylight Savings Time (DST)
-    is currently in effect"""
-
-    
-
-    x = datetime(datetime.now().year, 1, 1, 0, 0, 0, tzinfo=pytz.timezone(
-        self.config['USERS_TIME_ZONE']))  # Jan 1 of this year
-    y = datetime.now(pytz.timezone(self.config['USERS_TIME_ZONE']))
-
-    # if DST is in effect, their offsets will be different
-    return not (y.utcoffset() == x.utcoffset())

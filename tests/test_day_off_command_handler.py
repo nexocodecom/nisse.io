@@ -16,11 +16,13 @@ class TestDayOffCommanHandler(TestCase):
     @mock.patch('nisse.services.UserService')
     @mock.patch('slackclient.SlackClient')
     @mock.patch('nisse.services.DayOffService')
-    def setUp(self, mock_project_service, mock_user_service, mock_slack_client, mock_dayoff_service):
+    @mock.patch('nisse.services.GoogleCalendarService')
+    def setUp(self, mock_project_service, mock_user_service, mock_slack_client, mock_dayoff_service, mock_calendar_service):
         self.mock_user_service = mock_user_service
         self.mock_project_service = mock_project_service
         self.mock_slack_client = mock_slack_client
         self.mock_dayoff_service = mock_dayoff_service
+        self.mock_calendar_service = mock_calendar_service
 
         self.mock_dayoff_service.get_user_days_off_since.return_value = [
             Dayoff(start_date=datetime(2018, 12, 12), end_date=datetime(2018, 12, 18))]
@@ -32,71 +34,90 @@ class TestDayOffCommanHandler(TestCase):
                                             mock_user_service,
                                             mock_slack_client,
                                             mock_project_service,
-                                            mock.create_autospec(
-                                                ReminderService),
-                                            mock_dayoff_service)
+                                            mock.create_autospec(ReminderService),
+                                            mock_dayoff_service,
+                                            mock_calendar_service)
 
     def test_new_daysoff_should_not_start_within_exisitng_daysoff(self):
         #Arrange
-        request_form = RequestFreeDaysForm(start_date='2018-12-15', end_date='2018-12-19', reason='')
-        payload = RequestFreeDaysPayload('', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
-        self.handler.current_date = MagicMock(return_value=datetime(2018, 12, 10))
+        request_form = RequestFreeDaysForm(
+            start_date='2018-12-15', end_date='2018-12-19', reason='')
+        payload = RequestFreeDaysPayload(
+            '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
+        self.handler.current_date = MagicMock(
+            return_value=datetime(2018, 12, 10))
 
-        #Act        
+        #Act
         try:
             self.handler.handle(payload)
             self.fail()
         except ValidationError as err:
-            self.assertEqual(err.messages, ['Day off must not start within other holiday'])
+            self.assertEqual(
+                err.messages, ['Day off must not start within other holiday'])
             self.assertEqual(err.field_names, ['start_date'])
 
     def test_new_daysoff_should_not_end_within_exisitng_daysoff(self):
         #Arrange
-        request_form = RequestFreeDaysForm(start_date='2018-12-11', end_date='2018-12-15', reason='')
-        payload = RequestFreeDaysPayload('', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
-        self.handler.current_date = MagicMock(return_value=datetime(2018, 12, 10))        
+        request_form = RequestFreeDaysForm(
+            start_date='2018-12-11', end_date='2018-12-15', reason='')
+        payload = RequestFreeDaysPayload(
+            '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
+        self.handler.current_date = MagicMock(
+            return_value=datetime(2018, 12, 10))
 
         #Act
         try:
             self.handler.handle(payload)
             self.fail()
         except ValidationError as err:
-            self.assertEqual(err.messages, ['Day off must not end within other holiday'])
+            self.assertEqual(
+                err.messages, ['Day off must not end within other holiday'])
             self.assertEqual(err.field_names, ['end_date'])
 
     def test_new_daysoff_should_validate_current_date(self):
         #Arrange
-        request_form = RequestFreeDaysForm(start_date='2018-12-10', end_date='2018-12-15', reason='')
-        payload = RequestFreeDaysPayload('', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
-        self.handler.current_date = MagicMock(return_value=datetime(2018, 12, 10))        
+        request_form = RequestFreeDaysForm(
+            start_date='2018-12-10', end_date='2018-12-15', reason='')
+        payload = RequestFreeDaysPayload(
+            '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
+        self.handler.current_date = MagicMock(
+            return_value=datetime(2018, 12, 10))
 
         #Act
         try:
             self.handler.handle(payload)
             self.fail()
         except ValidationError as err:
-            self.assertEqual(err.messages, ['Holiday must start in the future'])
+            self.assertEqual(
+                err.messages, ['Holiday must start in the future'])
             self.assertEqual(err.field_names, ['start_date'])
 
     def test_new_daysoff_should_check_if_start_date_is_not_lower_than_end_date(self):
         #Arrange
-        request_form = RequestFreeDaysForm(start_date='2018-12-10', end_date='2018-12-9', reason='')
-        payload = RequestFreeDaysPayload('', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
-        self.handler.current_date = MagicMock(return_value=datetime(2018, 12, 1))        
+        request_form = RequestFreeDaysForm(
+            start_date='2018-12-10', end_date='2018-12-9', reason='')
+        payload = RequestFreeDaysPayload(
+            '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
+        self.handler.current_date = MagicMock(
+            return_value=datetime(2018, 12, 1))
 
         #Act
         try:
             self.handler.handle(payload)
             self.fail()
         except ValidationError as err:
-            self.assertEqual(err.messages, ['End date must not be lower than start date'])
+            self.assertEqual(
+                err.messages, ['End date must not be lower than start date'])
             self.assertEqual(err.field_names, ['end_date'])
 
     def test_should_succeed(self):
         #Arrange
-        request_form = RequestFreeDaysForm(start_date='2018-12-19', end_date='2018-12-24', reason='')
-        payload = RequestFreeDaysPayload('', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
-        self.handler.current_date = MagicMock(return_value=datetime(2018, 12, 13))
+        request_form = RequestFreeDaysForm(
+            start_date='2018-12-19', end_date='2018-12-24', reason='')
+        payload = RequestFreeDaysPayload(
+            '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
+        self.handler.current_date = MagicMock(
+            return_value=datetime(2018, 12, 13))
         self.handler.get_user_by_slack_user_id = MagicMock()
 
         #Act
@@ -106,3 +127,5 @@ class TestDayOffCommanHandler(TestCase):
         self.assertEqual(1, self.handler.get_user_by_slack_user_id.call_count)
         self.assertEqual(1, self.mock_dayoff_service.get_user_days_off_since.call_count)
         self.assertEqual(1, self.mock_dayoff_service.insert_user_day_off.call_count)
+        self.assertEqual(1, self.mock_calendar_service.report_free_day.call_count)
+
