@@ -9,6 +9,10 @@ from nisse.models.slack.payload import RemindTimeReportBtnPayload
 from nisse.services import UserService
 from nisse.utils.string_helper import get_full_class_name
 
+from logging import Logger
+from flask.config import Config
+from flask_injector import inject
+
 
 def get_users_to_notify(logger, config):
     engine = create_engine(config['SQLALCHEMY_DATABASE_URI'])
@@ -17,16 +21,17 @@ def get_users_to_notify(logger, config):
     try:
         session = session_maker()
         user_service = UserService(session, Bcrypt())
+        end_date = datetime.utcnow().time()
+        start_date = end_date - timedelta(minutes=5)
         return user_service.get_users_to_notify(datetime.utcnow().date(), datetime.utcnow().weekday(),
-                                                (datetime.utcnow() - timedelta(minutes=5)).time(),
-                                                datetime.utcnow().time())
+                                                start_date.time(),
+                                                end_date.time())
     except Exception as e:
         logger.error(e)
         raise
     finally:
         if session:
             session.close()
-
 
 def remind(logger, config):
     logger.info('Reminder job started: ' + str(datetime.utcnow().time()))
@@ -42,25 +47,28 @@ def remind(logger, config):
             user=user.slack_user_id)
 
         if not im_channel["ok"]:
-            logger.error("Can't open im channel for: " + str(user.user_id) + '. ' + im_channel["error"])
+            logger.error("Can't open im channel for: " +
+                         str(user.user_id) + '. ' + im_channel["error"])
+        remind_date = datetime.now()
 
         resp = slack_client.api_call(
             "chat.postMessage",
             channel=im_channel['channel']['id'],
-            text="It looks like you didn't report work time for `Today`",
+            text="It looks like you didn't report work time for `{0}`".format(remind_date.strftime("%A, %d %B")), # date formatted like Wednesday, 19
             mrkdwn=True,
             attachments=[
                 {
                     "text": "Click 'Report' or use */ni* command:",
                     "color": "#3AA3E3",
                     "attachment_type": "default",
-                    "callback_id": get_full_class_name(RemindTimeReportBtnPayload),
+                    "callback_id": get_full_class_name(RemindTimeReportBtnPayload),                                       
                     "actions": [
                         {
                             "name": "report",
                             "text": "Report",
                             "style": "success",
-                            "type": "button"
+                            "type": "button",
+                            'value': remind_date.strftime("%Y-%m-%d"), 
                         }
                     ],
                     "mrkdwn_in": ["text"]
@@ -69,12 +77,13 @@ def remind(logger, config):
                     "text": "",
                     "footer": config['MESSAGE_REMINDER_RUN_TIP'],
                     "mrkdwn_in": ["footer"]
-                }
+                },
             ],
             as_user=True
         )
 
         if not resp["ok"]:
-            logger.error("Can't send reminder message to user id: " + str(user.user_id) + '. ' + resp["error"])
+            logger.error("Can't send reminder message to user id: " +
+                         str(user.user_id) + '. ' + resp["error"])
 
     logger.info('Reminder job finished: ' + str(datetime.utcnow().time()))

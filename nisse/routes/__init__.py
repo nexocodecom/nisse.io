@@ -17,7 +17,7 @@ def configure_oauth(app: Flask, oauth: OAuth2Provider):
     pass
 
 
-def configure_url_rules(app: Flask):
+def configure_url_rules(app: Flask):    
     pass
 
 

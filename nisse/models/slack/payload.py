@@ -73,7 +73,7 @@ class Payload(object):
         self.user = user
         self.channel = channel
         self.response_url = response_url
-        self.actions = actions
+        self.actions = {x.name: x for x in actions} if actions else None
         self.trigger_id = trigger_id
         self.messages_ts = messages_ts
 
@@ -281,8 +281,7 @@ class DeleteConfirmPayloadSchema(PayloadSchema):
         return DeleteConfirmPayload(**data)
 
 
-class RemindTimeReportBtnPayloadSchema(PayloadSchema):
-
+class RemindTimeReportBtnPayloadSchema(PayloadSchema):    
     @post_load
     def make_obj(self, data):
         return RemindTimeReportBtnPayload(**data)
