@@ -1,7 +1,7 @@
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 from nisse.services.user_service import UserService
 from nisse.services.project_service import Project, ProjectService
-from nisse.services.day_off_service import Dayoff, DayOffService
+from nisse.services.vacation_service import Vacation, VacationService
 from nisse.services.reminder_service import ReminderService
 from nisse.models.slack.dialog import Element, Dialog
 from slackclient import SlackClient
@@ -15,16 +15,16 @@ from marshmallow import ValidationError
 from nisse.services import GoogleCalendarService
 
 
-class DayOffCommandHandler(SlackCommandHandler):
+class VacationCommandHandler(SlackCommandHandler):
 
     @inject
     def __init__(self, logger: logging.Logger, user_service: UserService, 
         slack_client: SlackClient, project_service: ProjectService, 
-        reminder_service: ReminderService, dayoff_service: DayOffService,
+        reminder_service: ReminderService, vacation_service: VacationService,
         calendar_service: GoogleCalendarService
         ):
         super().__init__(logger, user_service, slack_client, project_service, reminder_service)
-        self.dayoff_service = dayoff_service
+        self.vacation_service = vacation_service
         self.calendar_service = calendar_service
 
     def handle(self, payload: RequestFreeDaysPayload):
@@ -34,21 +34,21 @@ class DayOffCommandHandler(SlackCommandHandler):
 
         if start_date <= self.current_date():
             raise ValidationError(
-                'Holiday must start in the future', ['start_date'])
+                'Vacation must start in the future', ['start_date'])
 
         if end_date < start_date:
             raise ValidationError(
                 'End date must not be lower than start date', ['end_date'])
 
-        user_daysoff = self.dayoff_service.get_user_days_off_since(
+        user_vacatios = self.vacation_service.get_user_vacations_since(
             user.user_id, self.current_date())
-        for dayoff in user_daysoff:
-            if dayoff.start_date <= start_date and start_date <= dayoff.end_date:
-                raise ValidationError('Day off must not start within other holiday', ['start_date'])
-            if end_date <= dayoff.end_date:
-                raise ValidationError('Day off must not end within other holiday', ['end_date'])
+        for vacation in user_vacatios:
+            if vacation.start_date <= start_date and start_date <= vacation.end_date:
+                raise ValidationError('Vacation must not start within other vacation. Conflicting vacation: {0} to {1}'.format(vacation.start_date.date(), vacation.end_date.date()), ['start_date'])
+            if end_date <= vacation.end_date:
+                raise ValidationError('Vacation must not end within other vacation. Conflicting vacation: {0} to {1}'.format(vacation.start_date.date(), vacation.end_date.date()), ['end_date'])
 
-        self.dayoff_service.insert_user_day_off(user.user_id, start_date, end_date, payload.submission.reason)
+        self.vacation_service.insert_user_vacation(user.user_id, start_date, end_date, payload.submission.reason)
         self.calendar_service.report_free_day(payload.user.name, user.username, start_date, end_date, payload.submission.reason)
 
     def create_dialog(self, command_body, argument, action) -> Dialog:

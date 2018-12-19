@@ -8,7 +8,7 @@ from typing import Dict
 from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
 from nisse.services.exception import DataException, SlackUserException
-from nisse.routes.slack.command_handlers.dayoff_command_handler import DayOffCommandHandler
+from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
 from nisse.services.slack.slack_command_service import SlackCommandService
 
 
@@ -16,7 +16,7 @@ from nisse.services.slack.slack_command_service import SlackCommandService
 class SlackCommand(Resource):
 
     @inject
-    def __init__(self, app: Flask, slack_command_service: SlackCommandService, dayOffCommandHandler: DayOffCommandHandler):
+    def __init__(self, app: Flask, slack_command_service: SlackCommandService, vacationCommandHandler: VacationCommandHandler):
         self.app = app
         self.slack_command_service = slack_command_service
         self.error_schema = ErrorSchema()
@@ -26,7 +26,7 @@ class SlackCommand(Resource):
             'list': self.slack_command_service.list_command_message,
             'report': self.slack_command_service.report_pre_dialog,
             'delete': self.slack_command_service.delete_command_message,
-            'dayoff': dayOffCommandHandler.show_dialog,
+            'vacation': vacationCommandHandler.show_dialog,
             'reminder': self.reminder,
             'help': self.slack_command_service.help_command_message
         }

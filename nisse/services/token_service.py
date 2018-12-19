@@ -12,23 +12,17 @@ class TokenService(object):
     def __init__(self, session: Session):
         self.db = session()
 
-    def find(self, access_token=None, refresh_token=None):
+    def find(self, client_id:str) -> Token:
         """ Retrieve a token record using submitted access token or
         refresh token.
 
         :param access_token: User access token.
         :param refresh_token: User refresh token.
-        """
-        if access_token:
-            return self.db.query(Token) \
-            .filter(access_token == Token \
-            .access_token).first()
-        elif refresh_token:
-            return self.db.session.query(Token) \
-            .filter(refresh_token == Token \
-            .refresh_token).first()
+        """        
+        return self.db.query(Token) \
+            .filter(client_id == Token.client_id).first()
 
-    def save(self,token, request):
+    def save(self, token):
         """ Save a new token to the database.
 
         :param token: Token dictionary containing access and refresh tokens,
@@ -36,25 +30,19 @@ class TokenService(object):
         :param request: Request dictionary containing information about the
             client and user.
         """
-        toks = self.db.query(Token)
-        filter(Token.client_id == request.client.client_id, Token.user_id==request.user.user_id)
+        db_token = self.find(token['client_id'])
 
-        # Make sure that there is only one grant token for every
-        # (client, user) combination.
-        [self.db.delete(t) for t in toks]
-
-        expires_in = token.pop('expires_in')
-        expires = datetime.utcnow() + timedelta(seconds=expires_in)
-
-        tok = Token(
-            access_token=token['access_token'],
-            refresh_token=token['refresh_token'],
-            token_type=token['token_type'],
-            expires=expires,
-            client_id=request.client.client_id,
-            user_id=request.user.user_id,
-        )
-        self.db.add(tok)
+        if db_token:
+            db_token.token = token['token']
+            db_token.refresh_token = token['refresh_token'] or db_token.refresh_token
+            db_token.token_uri = token['token_uri'] or db_token.token_uri
+            db_token.client_secret = token['client_secret'] or db_token.client_secret
+        else:
+            scopes = token.pop('scopes', None)
+            token['scopes'] = ';'.join(scopes) if scopes else ''
+            db_token = Token(**token)            
+            self.db.add(db_token)
+        
         self.db.commit()
 
     def __del__(self):

@@ -15,8 +15,8 @@ class GoogleCalendarService(object):
     def __init__(self, config: Config, oauth_store: OAuthStore):
         self.config = config
         self.oauth_store = oauth_store
-        self.holiday_calendar_id = config['GOOGLE_HOLIDAY_CALENDAR_NAME']
-        self.free_day_calendar_id = config['GOOGLE_CALENDAR_NAME']
+        self.google_vacation_calendar_id = config['GOOGLE_VACATION_CALENDAR_ID']
+        self.google_holiday_calendar_id = config['GOOGLE_HOLIDAY_CALENDAR_ID']
         self.time_zone = config['USERS_TIME_ZONE']
         self.calendar_title_format = config['CALENDAR_TITLE_FORMAT']
 
@@ -28,14 +28,11 @@ class GoogleCalendarService(object):
         to_date_utc = self._convert_to_google_utc_date_string(to_date)
 
         free_days_result = self.service.events() \
-            .list(calendarId=self.holiday_calendar_id, timeMin=from_date_utc, timeMax=to_date_utc) \
+            .list(calendarId=self.google_vacation_calendar_id, timeMin=from_date_utc, timeMax=to_date_utc) \
             .execute()
         return free_days_result.get('items', [])
 
-    def report_free_day(self, slack_user_name:str, user_email: str, from_date: date, to_date: date, reason:str):        
-        calendar = self.get_calendar_by_name(self.free_day_calendar_id)
-        if calendar is None:
-            return False
+    def report_free_day(self, slack_user_name:str, user_email: str, from_date: date, to_date: date, reason:str):                
         body = {
             'summary': self.calendar_title_format.format(slack_user_name),
             'start': {
@@ -52,19 +49,7 @@ class GoogleCalendarService(object):
             },
             'description': reason
         }
-        self.service.events().insert(calendarId=calendar['id'], body=body).execute()
-
-    def get_calendars(self):
-        calendars_dict_items = self.service.calendarList().list().execute()
-        return dict(calendars_dict_items)['items']
-
-    def get_calendar_by_name(self, calendar_name):
-        calendars = self.get_calendars()
-        filtered_calendars = list(filter(lambda x: x['summary'] == self.free_day_calendar_id, calendars))
-        if len(filtered_calendars) == 0: 
-            return None
-        
-        return filtered_calendars[0]
+        self.service.events().insert(calendarId=self.google_vacation_calendar_id, body=body).execute()
 
     def _format_google_date(self, date: date):
         return date.strftime('%Y-%m-%d')

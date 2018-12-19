@@ -99,8 +99,8 @@ class RequestFreeDaysPayload(Payload):
         self.submission = submission
 
     def handler_type(self) -> type:
-        from nisse.routes.slack.command_handlers.dayoff_command_handler import DayOffCommandHandler
-        return DayOffCommandHandler
+        from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+        return VacationCommandHandler
 
 
 class TimeReportingFormPayload(Payload):
