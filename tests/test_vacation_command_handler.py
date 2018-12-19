@@ -119,6 +119,7 @@ class TestVacationCommanHandler(TestCase):
         self.handler.current_date = MagicMock(
             return_value=datetime(2018, 12, 13))
         self.handler.get_user_by_slack_user_id = MagicMock()
+        self.handler.send_message_to_client = MagicMock()
 
         #Act
         self.handler.handle(payload)
@@ -128,4 +129,6 @@ class TestVacationCommanHandler(TestCase):
         self.assertEqual(1, self.mock_vacation_service.get_user_vacations_since.call_count)
         self.assertEqual(1, self.mock_vacation_service.insert_user_vacation.call_count)
         self.assertEqual(1, self.mock_calendar_service.report_free_day.call_count)
+        self.assertEqual(1, self.handler.send_message_to_client.call_count)
+        
 

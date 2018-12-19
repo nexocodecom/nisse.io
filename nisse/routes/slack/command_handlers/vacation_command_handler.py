@@ -45,11 +45,12 @@ class VacationCommandHandler(SlackCommandHandler):
         for vacation in user_vacatios:
             if vacation.start_date <= start_date and start_date <= vacation.end_date:
                 raise ValidationError('Vacation must not start within other vacation. Conflicting vacation: {0} to {1}'.format(vacation.start_date.date(), vacation.end_date.date()), ['start_date'])
-            if end_date <= vacation.end_date:
+            if vacation.start_date <= end_date and end_date <= vacation.end_date:
                 raise ValidationError('Vacation must not end within other vacation. Conflicting vacation: {0} to {1}'.format(vacation.start_date.date(), vacation.end_date.date()), ['end_date'])
 
         self.vacation_service.insert_user_vacation(user.user_id, start_date, end_date, payload.submission.reason)
         self.calendar_service.report_free_day(payload.user.name, user.username, start_date, end_date, payload.submission.reason)
+        self.send_message_to_client(payload.user.id, "Reported vacation from {0} to {1}. Reason: {2}".format(start_date.date(), end_date.date(), payload.submission.reason))
 
     def create_dialog(self, command_body, argument, action) -> Dialog:
         nowdate = datetime.now().date() + timedelta(days=1)

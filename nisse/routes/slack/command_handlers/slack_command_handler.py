@@ -79,3 +79,17 @@ class SlackCommandHandler(ABC):
 
     def current_date(self) -> datetime:
         return datetime.now()
+
+    def send_message_to_client(self, slack_user_id, message: str):
+        im_channel = self.slack_client.api_call("im.open", user=slack_user_id)
+
+        if not im_channel["ok"]:
+            self.logger.error("Can't open im channel for: " + str(slack_user_id) + '. ' + im_channel["error"])
+            return
+
+        self.slack_client.api_call(
+                "chat.postMessage",
+                channel=im_channel['channel']['id'],
+                text=message,
+                as_user=True
+            )
