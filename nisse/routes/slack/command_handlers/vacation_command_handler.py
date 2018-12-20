@@ -50,13 +50,13 @@ class VacationCommandHandler(SlackCommandHandler):
 
         self.vacation_service.insert_user_vacation(user.user_id, start_date, end_date, payload.submission.reason)
         self.calendar_service.report_free_day(payload.user.name, user.username, start_date, end_date, payload.submission.reason)
-        self.send_message_to_client(payload.user.id, "Reported vacation from {0} to {1}. Reason: {2}".format(start_date.date(), end_date.date(), payload.submission.reason))
+        self.send_message_to_client(payload.user.id, "Reported vacation from `{0}` to `{1}`. Reason: `{2}`".format(start_date.strftime("%A, %d %B"), end_date.strftime("%A, %d %B"), payload.submission.reason))
 
     def create_dialog(self, command_body, argument, action) -> Dialog:
-        nowdate = datetime.now().date() + timedelta(days=1)
+        tomorrow_date = datetime.now().date() + timedelta(days=1)
 
         elements = [
-            Element("Start day", "text", "start_date", "specify date", nowdate),
+            Element("Start day", "text", "start_date", "specify date", tomorrow_date),
             Element("End day", "text", "end_date", "specify date"),
             Element("Reason", "textarea", "reason", "Reason", optional='true')
         ]

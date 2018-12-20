@@ -46,8 +46,8 @@ class SlackCommand(Resource):
         arguments = params[1:]
 
         try:
-            result = self.dispatcher.get(action, self.handle_other)(
-                command_body, arguments, action)
+            callback = self.dispatcher.get(action, self.handle_other)
+            result = callback(command_body, arguments, action)
             return (result, 200) if result else (None, 204)
 
         except DataException as e:

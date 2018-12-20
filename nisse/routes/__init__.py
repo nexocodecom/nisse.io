@@ -9,14 +9,15 @@ from nisse.routes.google_auth import google_authorize, google_nisseoauthcallback
 
 
 def configure_oauth(app: Flask):
-    app.add_url_rule('/google/authorize', 'authorize', google_authorize)    
+    app.add_url_rule('/google/authorize', 'authorize', google_authorize)
     app.add_url_rule('/google/nisseoauthcallback', 'nisseoauthcallback', google_nisseoauthcallback)
-    app.add_url_rule('/google/revoke', 'revoke', google_revoke)    
+    app.add_url_rule('/google/revoke', 'revoke', google_revoke)
+
 
 def configure_api(api: Api):
     # Slack endpoints
     api.add_resource(SlackCommand, '/slack/command', methods=['POST'])
-    api.add_resource(SlackDialogSubmission, '/slack/dialog/submission', methods=['POST'])  
+    api.add_resource(SlackDialogSubmission, '/slack/dialog/submission', methods=['POST'])
 
     # TODO: uncomment if you want to provide rest API
     # api.add_resource(ProjectREST, '/projects/<int:project_id>',

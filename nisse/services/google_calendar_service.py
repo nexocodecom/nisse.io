@@ -36,7 +36,7 @@ class GoogleCalendarService(object):
         body = {
             'summary': self.calendar_title_format.format(slack_user_name),
             'start': {
-                "date": self._format_google_date(from_date),
+                'date': self._format_google_date(from_date),
                 "timeZone": self.time_zone
             },
             'end': {
