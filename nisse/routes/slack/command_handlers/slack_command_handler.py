@@ -93,3 +93,9 @@ class SlackCommandHandler(ABC):
                 text=message,
                 as_user=True
             )
+
+    def _extract_slack_user_id(self, user):
+        if user is not None and user.startswith("<") and user.endswith(">") and user[1] == "@":
+            return user[2:-1].split('|')[0]
+        else:
+            return None
