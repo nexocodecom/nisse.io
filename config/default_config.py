@@ -11,8 +11,11 @@ USERS_TIME_ZONE = 'Europe/Warsaw'
 ELASTIC_HOST = ''
 GOOGLE_API_CLIENT_ID = 'GOOGLE_API_CLIENT_ID used in oauth2'
 GOOGLE_API_CLIENT_SECRET = 'GOOGLE_API_CLIENT_SECRET in oauth2'
+GOOGLE_VACATION_CALENDAR_ID = ''
+GOOGLE_HOLIDAYS_CALENDAR_ID = ''
 
 MESSAGE_REMINDER_RUN_TIP = "Use */ni reminder* to check yours reminder settings"
 MESSAGE_REMINDER_SET_TIP = "Use *{0} reminder set mon:hh:mm,wed:off* to change settings"
 MESSAGE_SUBMIT_TIME_TIP = "Use */ni list* to view submitted records"
 MESSAGE_LIST_TIME_TIP = "Use */ni delete* to remove record"
+CALENDAR_TITLE_FORMAT = 'Vacation: {0}'

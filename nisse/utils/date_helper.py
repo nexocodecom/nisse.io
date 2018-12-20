@@ -2,6 +2,7 @@ from calendar import monthrange
 from datetime import timedelta
 from datetime import datetime as dt
 from enum import Enum
+from datetime import datetime
 
 class TimeRanges(Enum):
     today = 'Today'
@@ -53,3 +54,9 @@ def date_range(start_date, end_date):
 
 def is_weekend(date):
     return date.weekday() >= 5
+
+def parse_formatted_date(date):
+    return parse_formatted_date(date).date()
+
+def parse_formatted_datetime(date):
+    return datetime.strptime(date, '%Y-%m-%d')

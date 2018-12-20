@@ -338,7 +338,7 @@ class SlackCommandService:
         try:
             os.remove(path_for_report)
         except OSError as err:
-            self.logger.error("Cannot delete report file{0}".format(err))
+            self.logger.error("Cannot delete report file {0}".format(err))
 
         if not resp["ok"]:
             self.logger.error("Can't send report: " + resp.get("error"))
@@ -421,6 +421,9 @@ class SlackCommandService:
             self.logger.error("Can't delete message: " + resp.get("error"))
 
         return None
+
+    def dayoff_command_message(self, command_body, arguments, action):
+        return Message().dump()
 
     def get_projects_option_list_as_label(self, user_id=None) -> List[LabelSelectOption]:
         # todo cache it globally e.g. Flask-Cache        

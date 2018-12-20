@@ -24,7 +24,7 @@ class ErrorsTests(unittest.TestCase):
         result = schema.dump(form)
         print(result)
         pay: Payload = schema.load(result.data)        
-        print(pay.data['trigger_id'])
+        print(pay.data.trigger_id)
 
 
 
