@@ -20,6 +20,7 @@ flask_bcrypt
 python-dateutil
 google-api-python-client
 oauth2client
+google_auth_oauthlib
 marshmallow==2.15.3
 marshmallow-oneofschema==1.0.5
 CMRESHandler==1.0.0
