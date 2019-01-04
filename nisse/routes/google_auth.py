@@ -14,6 +14,13 @@ def get_flow(state=None, token_updater=None):
     return google_auth_oauthlib.flow.Flow.from_client_secrets_file("./config/client_secret.json", scopes=SCOPES, state=state, token_updater=token_updater)
 
 
+def get_request_scheme():
+    if flask.request.host.startswith('localhost') or flask.request.host.startswith('127.0.0.1'):
+        return flask.request.scheme
+    
+    return 'https'
+
+
 @inject
 def google_authorize(store: OAuthStore):
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
@@ -24,7 +31,7 @@ def google_authorize(store: OAuthStore):
     # error.
     flow.redirect_uri = flask.url_for('nisseoauthcallback',
                                       _external=True,
-                                      _scheme=flask.request.scheme)
+                                      _scheme=get_request_scheme())
     authorization_url, state = flow.authorization_url(
         # Enable offline access so that you can refresh an access token without
         # re-prompting the user for permission. Recommended for web server apps.
@@ -46,7 +53,7 @@ def google_nisseoauthcallback(store: OAuthStore):
     flow.redirect_uri = flask.url_for(
         'nisseoauthcallback',
         _external=True,
-        _scheme=flask.request.scheme)
+        _scheme=get_request_scheme())
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url
     flow.fetch_token(authorization_response=authorization_response)
