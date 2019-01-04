@@ -5,15 +5,13 @@ from nisse.routes.project import ProjectApi, ProjectREST
 from nisse.routes.time_entry import TimeEntryApi
 from nisse.routes.slack.slack_command import SlackCommand
 from nisse.routes.slack.slack_interactive_message import SlackDialogSubmission
-from nisse.routes.google_auth import google_authorize, google_nisseoauthcallback, google_revoke, oauthcallback_link
+from nisse.routes.google_auth import google_authorize, google_nisseoauthcallback, google_revoke
 
 
 def configure_oauth(app: Flask):
     app.add_url_rule('/google/authorize', 'authorize', google_authorize)
     app.add_url_rule('/google/nisseoauthcallback', 'nisseoauthcallback', google_nisseoauthcallback)
     app.add_url_rule('/google/revoke', 'revoke', google_revoke)
-    app.add_url_rule('/google/link', 'link', oauthcallback_link)
-
 
 def configure_api(api: Api):
     # Slack endpoints

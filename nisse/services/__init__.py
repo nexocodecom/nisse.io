@@ -20,16 +20,9 @@ from nisse.services.oauth_store import OAuthStore
 from flask.config import Config
 
 
-def create_logger(binder: Binder):
-    logger = binder.injector.get(Flask).logger
-    logger.handlers
-
-    return logger
-
-
 def configure_container(binder: Binder):
 
-    binder.bind(logging.Logger, to=create_logger(binder))
+    binder.bind(logging.Logger, to=binder.injector.get(Flask).logger)
 
     binder.bind(SQLAlchemy, to=SQLAlchemy(
         binder.injector.get(Flask), model_class=Base), scope=singleton)

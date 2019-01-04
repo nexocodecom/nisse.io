@@ -43,7 +43,7 @@ class SlackDialogSubmission(Resource):
             payload: Payload = result.data
 
             #this one is for future refactor of slackcommandservice since it is growing bigger and bigger and will eventually turn into god class
-            if payload.handler_type is not None:
+            if payload.handler_type() is not None:
                 return self.try_use_handler(payload)
             else:
                 result = payload.handle(self.slack_command_service)
