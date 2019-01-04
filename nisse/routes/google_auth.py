@@ -64,7 +64,7 @@ def google_nisseoauthcallback(store: OAuthStore, logger: Logger):
     
     logger.error('rediret uri: {0}'.format(flow.redirect_uri))
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
-    authorization_response = flask.request.url
+    authorization_response = flask.url_for('nisseoauthcallback', _external=True, _scheme = get_request_scheme(), **flask.request.values)
     logger.error('authorization response: {0}'.format(authorization_response))
     flow.fetch_token(authorization_response=authorization_response)
     # Store credentials.
