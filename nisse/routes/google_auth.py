@@ -6,6 +6,7 @@ import flask
 import requests
 import requests_oauthlib
 from nisse.services import OAuthStore
+from logging import Logger
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -49,17 +50,20 @@ def google_authorize(store: OAuthStore):
 
 
 @inject
-def google_nisseoauthcallback(store: OAuthStore):
+def google_nisseoauthcallback(store: OAuthStore, logger: Logger):
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
     state = store.get_state()
-    flow = get_flow(state=state, token_updater=store.set_credentials)
+    flow = get_flow(state=state, token_updater=store.set_credentials)    
     flow.redirect_uri = flask.url_for(
         'nisseoauthcallback',
         _external=True,
-        _scheme=get_request_scheme())
+        _scheme= get_request_scheme())
+    
+    logger.debug('redirec_uri: {0}'.format(flow.redirect_uri))
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url
+    logger.debug('authorization response: {0}'.format(authorization_response))
     flow.fetch_token(authorization_response=authorization_response)
     # Store credentials.
     # ACTION ITEM: In a production app, you likely want to save these
