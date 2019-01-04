@@ -37,7 +37,7 @@ def google_authorize(store: OAuthStore, logger: Logger):
     flow.redirect_uri = flask.url_for('nisseoauthcallback',
                                       _external=True,
                                       _scheme=get_request_scheme())
-    logger.error('redirec_uri: {0}'.format(flow.redirect_uri))
+    logger.error('redirect uri: {0}'.format(flow.redirect_uri))
     authorization_url, state = flow.authorization_url(
         # Enable offline access so that you can refresh an access token without
         # re-prompting the user for permission. Recommended for web server apps.
@@ -45,7 +45,7 @@ def google_authorize(store: OAuthStore, logger: Logger):
         prompt='consent',
         # Enable incremental authorization. Recommended as a best practice.
         include_granted_scopes='true')
-    logger.error('redirec_uri: {0}'.format(flow.authorization_url))
+    logger.error('authorization url: {0}'.format(authorization_url))
     # Store the state so the callback can verify the auth server response.
     store.set_state(state)
     return flask.redirect(authorization_url)
@@ -62,7 +62,7 @@ def google_nisseoauthcallback(store: OAuthStore, logger: Logger):
         _external=True,
         _scheme= get_request_scheme())
     
-    logger.error('redirec_uri: {0}'.format(flow.redirect_uri))
+    logger.error('rediret uri: {0}'.format(flow.redirect_uri))
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url
     logger.error('authorization response: {0}'.format(authorization_response))
