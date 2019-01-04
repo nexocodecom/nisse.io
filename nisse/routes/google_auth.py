@@ -20,6 +20,10 @@ def get_request_scheme():
     
     return 'https'
 
+def oauthcallback_link():
+    return flask.url_for('nisseoauthcallback',
+                                      _external=True,
+                                      _scheme=get_request_scheme())
 
 @inject
 def google_authorize(store: OAuthStore):
