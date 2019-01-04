@@ -27,7 +27,7 @@ def oauthcallback_link():
                                       _scheme=get_request_scheme())
 
 @inject
-def google_authorize(store: OAuthStore):
+def google_authorize(store: OAuthStore, logger: Logger):
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
     flow = get_flow()
     # The URI created here must exactly match one of the authorized redirect URIs
@@ -37,6 +37,7 @@ def google_authorize(store: OAuthStore):
     flow.redirect_uri = flask.url_for('nisseoauthcallback',
                                       _external=True,
                                       _scheme=get_request_scheme())
+    logger.error('redirec_uri: {0}'.format(flow.redirect_uri))
     authorization_url, state = flow.authorization_url(
         # Enable offline access so that you can refresh an access token without
         # re-prompting the user for permission. Recommended for web server apps.
@@ -44,6 +45,7 @@ def google_authorize(store: OAuthStore):
         prompt='consent',
         # Enable incremental authorization. Recommended as a best practice.
         include_granted_scopes='true')
+    logger.error('redirec_uri: {0}'.format(flow.authorization_url))
     # Store the state so the callback can verify the auth server response.
     store.set_state(state)
     return flask.redirect(authorization_url)
