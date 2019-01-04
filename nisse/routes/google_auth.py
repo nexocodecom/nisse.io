@@ -22,7 +22,9 @@ def google_authorize(store: OAuthStore):
     # for the OAuth 2.0 client, which you configured in the API Console. If this
     # value doesn't match an authorized URI, you will get a 'redirect_uri_mismatch'
     # error.
-    flow.redirect_uri = flask.url_for('nisseoauthcallback', _external=True)
+    flow.redirect_uri = flask.url_for('nisseoauthcallback',
+                                      _external=True,
+                                      _scheme=flask.request.scheme)
     authorization_url, state = flow.authorization_url(
         # Enable offline access so that you can refresh an access token without
         # re-prompting the user for permission. Recommended for web server apps.
@@ -41,7 +43,10 @@ def google_nisseoauthcallback(store: OAuthStore):
     # verified in the authorization server response.
     state = store.get_state()
     flow = get_flow(state=state, token_updater=store.set_credentials)
-    flow.redirect_uri = flask.url_for('nisseoauthcallback', _external=True)
+    flow.redirect_uri = flask.url_for(
+        'nisseoauthcallback',
+        _external=True,
+        _scheme=flask.request.scheme)
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url
     flow.fetch_token(authorization_response=authorization_response)
