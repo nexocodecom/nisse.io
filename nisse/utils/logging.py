@@ -15,4 +15,4 @@ def init_logging(application):
                            es_additional_fields={'environment': env_name})
         application.logger.addHandler(handler)
 
-    #application.logger.setLevel(logging.DEBUG)
+    application.logger.setLevel(logging.DEBUG)
