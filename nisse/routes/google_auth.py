@@ -60,10 +60,10 @@ def google_nisseoauthcallback(store: OAuthStore, logger: Logger):
         _external=True,
         _scheme= get_request_scheme())
     
-    logger.debug('redirec_uri: {0}'.format(flow.redirect_uri))
+    logger.error('redirec_uri: {0}'.format(flow.redirect_uri))
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url
-    logger.debug('authorization response: {0}'.format(authorization_response))
+    logger.error('authorization response: {0}'.format(authorization_response))
     flow.fetch_token(authorization_response=authorization_response)
     # Store credentials.
     # ACTION ITEM: In a production app, you likely want to save these
