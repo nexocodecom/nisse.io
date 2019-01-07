@@ -107,7 +107,7 @@ class ListCommandHandler(SlackCommandHandler):
     def get_user_time_entries(self, user: User, inner_user: User, time_range):
         user_db_id = user.slack_user_id
         inner_user_db_id = inner_user.slack_user_id
-        current_user_name = "You" if inner_user_db_id == user_db_id else inner_user.first_name, time_range
+        current_user_name = "You" if inner_user_db_id == user_db_id else inner_user.first_name
 
         if inner_user_db_id != user_db_id and user.role.role != 'admin':
             message = "Sorry, but only admin user can see other users records :face_with_monocle:"
