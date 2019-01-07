@@ -26,9 +26,9 @@ class ListCommandHandler(SlackCommandHandler):
             'yesterday': 'Yesterday',
             'this2weeks': 'This 2 weeks',
             'this_week': 'This week',
-            'previous_week': 'Previous week',
+            'prev_week': 'Previous week',
             'this_month': 'This month',
-            'previous_month': 'Previous month'
+            'prev_month': 'Previous month'
         }
 
     def handle(self, form: ListCommandPayload):
