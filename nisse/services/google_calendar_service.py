@@ -16,7 +16,7 @@ class GoogleCalendarService(object):
         self.config = config
         self.oauth_store = oauth_store
         self.google_vacation_calendar_id = config['GOOGLE_VACATION_CALENDAR_ID']
-        self.google_holiday_calendar_id = config['GOOGLE_HOLIDAY_CALENDAR_ID']
+        self.google_holiday_calendar_id = config['GOOGLE_HOLIDAYS_CALENDAR_ID']
         self.time_zone = config['USERS_TIME_ZONE']
         self.calendar_title_format = config['CALENDAR_TITLE_FORMAT']
 

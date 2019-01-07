@@ -211,8 +211,8 @@ class TimeReportingFormSchema(Schema):
 
 class ReportGenerateFormSchema(Schema):
     project = fields.String(allow_none=True)
-    date_from = fields.String(validate=check_date)
-    date_to = fields.String(validate=check_date)
+    day_from = fields.String(validate=check_date)
+    day_to = fields.String(validate=check_date)
     user = fields.String(allow_none=True)
 
     @post_load

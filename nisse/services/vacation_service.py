@@ -19,6 +19,7 @@ class VacationService(object):
 
     def get_user_vacations_since(self, user_id, since_date):
         return self.db.session.query(Vacation) \
+            .filter(Vacation.user_id == user_id) \
             .filter(or_(Vacation.start_date > since_date, since_date < Vacation.end_date)) \
             .all()
 

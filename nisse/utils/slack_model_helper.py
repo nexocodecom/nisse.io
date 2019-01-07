@@ -39,6 +39,11 @@ def create_help_command_message(command_body) -> Message:
             mrkdwn_in=["text"]
         ),
         Attachment(
+            text='*{0} vacation*: Submit free time within range'.format(command_name),
+            attachment_type="default",
+            mrkdwn_in=['text']
+        ),
+        Attachment(
             text="*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(command_name),
             attachment_type="default",
             mrkdwn_in=["text"]

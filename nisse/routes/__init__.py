@@ -13,7 +13,6 @@ def configure_oauth(app: Flask):
     app.add_url_rule('/google/nisseoauthcallback', 'nisseoauthcallback', google_nisseoauthcallback)
     app.add_url_rule('/google/revoke', 'revoke', google_revoke)
 
-
 def configure_url_rules(app: Flask):
     pass
 
