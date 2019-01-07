@@ -62,9 +62,12 @@ class ListCommandHandler(SlackCommandHandler):
         time_range, inner_user_id = None, None
         if len(arguments) == 1:
             time_range = self.time_ranges.get(arguments[0])
+            inner_user_id = self._extract_slack_user_id(arguments[0])
+            if inner_user_id is not None: #first arg is user id, set default time frame to prev_month
+                time_range = self.time_ranges.get('prev_month')
         elif len(arguments) == 2:
-            time_range = self.time_ranges.get(arguments[0])
-            inner_user_id = self._extract_slack_user_id(arguments[1])
+            inner_user_id = self._extract_slack_user_id(arguments[0])
+            time_range = self.time_ranges.get(arguments[1])
         else:
             message = 'You have too much for me :confused:. I can only handle one or two parameters at once'
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
@@ -75,8 +78,8 @@ class ListCommandHandler(SlackCommandHandler):
                 arguments[0], '`, `'.join(self.time_ranges.keys()))
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
 
-        if len(arguments) == 2 and arguments[1] and inner_user_id is None:
-            message = 'I dont know this guy: {0}'.format(arguments[1])
+        if len(arguments) == 2 and inner_user_id is None:
+            message = 'I dont know this guy: {0}'.format(arguments[0])
             return Message(text=message, response_type='ephemeral')
 
         user = self.get_user_by_slack_user_id(command_body['user_id'])
