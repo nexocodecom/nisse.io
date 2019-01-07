@@ -21,7 +21,7 @@ def get_users_to_notify(logger, config):
     try:
         session = session_maker()
         user_service = UserService(session, Bcrypt())
-        end_date = datetime.utcnow().time()
+        end_date = datetime.utcnow()
         start_date = end_date - timedelta(minutes=5)
         return user_service.get_users_to_notify(datetime.utcnow().date(), datetime.utcnow().weekday(),
                                                 start_date.time(),
