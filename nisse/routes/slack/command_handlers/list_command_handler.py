@@ -63,7 +63,7 @@ class ListCommandHandler(SlackCommandHandler):
             return self.get_by_time_range(command_body, time_range).dump()
 
         # two arguments, inner_user_id, time_range
-        if len(arguments) == 2 and inner_user_id and time_range:
+        if len(arguments) == 2:
             return self.get_by_user_and_time_range(command_body, inner_user_id, time_range).dump()
 
         if len(arguments) > 2:
