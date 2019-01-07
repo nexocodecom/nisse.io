@@ -32,7 +32,11 @@ class ListCommandHandler(SlackCommandHandler):
         }
 
     def handle(self, form: ListCommandPayload):
-        action = next(iter(form.actions), None)
+        action_key = next(iter(form.actions), None)
+        if action_key is None:
+            return Message(text='No action key', response_type='ephemeral')
+
+        action = form.actions[action_key]            
         inner_user_id = action.name
         user_id = form.user.id
 
