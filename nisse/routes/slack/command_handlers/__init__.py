@@ -1,0 +1,2 @@
+from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler

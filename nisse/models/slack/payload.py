@@ -33,7 +33,7 @@ class TimeReportingForm(object):
 
 class ReportGenerateForm(object):
 
-    def __init__(self, project, day_from, day_to, user: SlackUser=None):
+    def __init__(self, project, day_from, day_to, user: SlackUser = None):
         self.project = project
         self.day_from = day_from
         self.day_to = day_to
@@ -62,6 +62,13 @@ class Action(object):
         self.value = value
         self.selected_options = selected_options
 
+class RequestFreeDaysForm(object):
+
+    def __init__(self, start_date, end_date, reason):
+        self.start_date = start_date
+        self.end_date = end_date
+        self.reason = reason
+
 
 class Payload(object):
 
@@ -78,14 +85,30 @@ class Payload(object):
         self.messages_ts = messages_ts
 
     def handle(self, slack_command_service):
-        raise NotImplementedError("Basic type - implementation is delivered by higher types")
+        raise NotImplementedError(
+            "Basic type - implementation is delivered by higher types")
+    
+    def handler_type(self) -> type:
+        return None
+
+
+class RequestFreeDaysPayload(Payload):
+    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url, submission: RequestFreeDaysForm, actions=None, trigger_id=None, messages_ts=None):
+        super().__init__(type, token, action_ts, team, user, channel,
+                         response_url, actions, trigger_id, messages_ts)
+        self.submission = submission
+
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+        return VacationCommandHandler
 
 
 class TimeReportingFormPayload(Payload):
 
     def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url, submission: TimeReportingForm, actions=None, trigger_id=None,
                  messages_ts=None):
-        super().__init__(type, token, action_ts, team, user, channel, response_url, actions, trigger_id, messages_ts)
+        super().__init__(type, token, action_ts, team, user, channel,
+                         response_url, actions, trigger_id, messages_ts)
         self.submission = submission
 
     def handle(self, slack_command_service):
@@ -96,16 +119,19 @@ class ReportGenerateFormPayload(Payload):
 
     def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url, submission: ReportGenerateForm, actions=None, trigger_id=None,
                  messages_ts=None):
-        super().__init__(type, token, action_ts, team, user, channel, response_url, actions, trigger_id, messages_ts)
+        super().__init__(type, token, action_ts, team, user, channel,
+                         response_url, actions, trigger_id, messages_ts)
         self.submission = submission
 
     def handle(self, slack_command_service):
         return slack_command_service.report_generate_command(self)
 
+
 class ReportGenerateDialogPayload(Payload):
 
     def handle(self, slack_command_service):
         return slack_command_service.report_dialog(self)
+
 
 class ListCommandPayload(Payload):
 
@@ -159,13 +185,16 @@ def check_duration_hours(duration):
     if not is_number(duration) or int(duration) > 12:
         raise ValidationError("Use integers, e.g. 2 up to 12", ["hours"])
 
+
 def check_duration_minutes(duration):
     if not is_number(duration) or (int(duration) % 15 != 0):
         raise ValidationError("Use integers 0|15|30|45 only", ["minutes"])
 
-def check_date(day):
+
+def check_date(day):    
     if not validate_date(day):
-        raise ValidationError('Provide date in format year-month-day e.g. {}'.format(date.today().isoformat()), ["day"])
+        raise ValidationError(
+            'Provide date in format year-month-day e.g. {}'.format(date.today().isoformat()), ["day"])
 
 
 class TimeReportingFormSchema(Schema):
@@ -182,8 +211,8 @@ class TimeReportingFormSchema(Schema):
 
 class ReportGenerateFormSchema(Schema):
     project = fields.String(allow_none=True)
-    day_from = fields.String(validate=check_date)
-    day_to = fields.String(validate=check_date)
+    date_from = fields.String(validate=check_date)
+    date_to = fields.String(validate=check_date)
     user = fields.String(allow_none=True)
 
     @post_load
@@ -212,7 +241,8 @@ class ActionSchema(Schema):
     name = fields.String()
     type = fields.String()
     value = fields.String(required=False)
-    selected_options = fields.List(fields.Nested(OptionSchema), allow_none=True)
+    selected_options = fields.List(
+        fields.Nested(OptionSchema), allow_none=True)
 
     @post_load
     def make_obj(self, data):
@@ -231,6 +261,10 @@ class PayloadSchema(Schema):
     trigger_id = fields.String()
     messages_ts = fields.String()
 
+    @post_load
+    def make_obj(self, data):
+        return Payload(**data)
+
 
 class TimeReportingFormPayloadSchema(PayloadSchema):
     submission = fields.Nested(TimeReportingFormSchema)
@@ -247,11 +281,13 @@ class ReportGenerateFormPayloadSchema(PayloadSchema):
     def make_obj(self, data):
         return ReportGenerateFormPayload(**data)
 
+
 class ReportGenerateDialogPayloadSchema(PayloadSchema):
 
     @post_load
     def make_obj(self, data):
         return ReportGenerateDialogPayload(**data)
+
 
 class ListCommandPayloadSchema(PayloadSchema):
 
@@ -286,6 +322,22 @@ class RemindTimeReportBtnPayloadSchema(PayloadSchema):
     def make_obj(self, data):
         return RemindTimeReportBtnPayload(**data)
 
+class RequestFreeDaysFormSchema(PayloadSchema):    
+    start_date = fields.String(validate=check_date)
+    end_date = fields.String(validate=check_date)
+    reason = fields.String(allow_none=True)
+
+    @post_load
+    def make_obj(self, data):
+        return RequestFreeDaysForm(**data)
+
+class RequestFreeDaysPayloadSchema(PayloadSchema):    
+    submission = fields.Nested(RequestFreeDaysFormSchema)
+
+    @post_load
+    def make_obj(self, data):
+        return RequestFreeDaysPayload(**data)
+
 
 class GenericPayloadSchema(OneOfSchema):
     type_field = 'callback_id'
@@ -297,7 +349,8 @@ class GenericPayloadSchema(OneOfSchema):
         get_full_class_name(DeleteCommandPayload): DeleteCommandPayloadSchema,
         get_full_class_name(DeleteTimeEntryPayload): DeleteTimeEntryPayloadSchema,
         get_full_class_name(DeleteConfirmPayload): DeleteConfirmPayloadSchema,
-        get_full_class_name(RemindTimeReportBtnPayload): RemindTimeReportBtnPayloadSchema
+        get_full_class_name(RemindTimeReportBtnPayload): RemindTimeReportBtnPayloadSchema,
+        get_full_class_name(RequestFreeDaysPayload): RequestFreeDaysPayloadSchema
     }
 
     def get_obj_type(self, obj):

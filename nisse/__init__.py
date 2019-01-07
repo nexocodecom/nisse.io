@@ -11,8 +11,7 @@ import nisse.services
 import nisse.routes
 from nisse.utils.configs import load_config
 from nisse.utils.logging import init_logging
-from nisse.utils.oauth_default_provider import oauth_default_provider
-from nisse.services import ClientService, UserService, TokenService
+from nisse.services import UserService, TokenService
 from __version__ import __version__
 
 application = Flask(__name__, instance_relative_config=True)
@@ -24,14 +23,11 @@ FlaskJSON(application)
 api = Api(application)
 
 nisse.routes.configure_api(api)
-nisse.routes.configure_url_rules(application)
+nisse.routes.configure_oauth(application)
 
 # IoC config
 flask_injector = FlaskInjector(
     app=application, modules=[nisse.services.configure_container])
-
-oauth = oauth_default_provider(application, flask_injector)
-nisse.routes.configure_oauth(application, oauth)
 
 # initial create
 db = flask_injector.injector.get(SQLAlchemy)

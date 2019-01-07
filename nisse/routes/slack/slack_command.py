@@ -8,13 +8,15 @@ from typing import Dict
 from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
 from nisse.services.exception import DataException, SlackUserException
+from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
 from nisse.services.slack.slack_command_service import SlackCommandService
+
 
 
 class SlackCommand(Resource):
 
     @inject
-    def __init__(self, app: Flask, slack_command_service: SlackCommandService):
+    def __init__(self, app: Flask, slack_command_service: SlackCommandService, vacationCommandHandler: VacationCommandHandler):
         self.app = app
         self.slack_command_service = slack_command_service
         self.error_schema = ErrorSchema()
@@ -24,6 +26,7 @@ class SlackCommand(Resource):
             'list': self.slack_command_service.list_command_message,
             'report': self.slack_command_service.report_pre_dialog,
             'delete': self.slack_command_service.delete_command_message,
+            'vacation': vacationCommandHandler.show_dialog,
             'reminder': self.reminder,
             'help': self.slack_command_service.help_command_message
         }
@@ -43,11 +46,13 @@ class SlackCommand(Resource):
         arguments = params[1:]
 
         try:
-            result = self.dispatcher.get(action, self.handle_other)(command_body, arguments, action)
+            callback = self.dispatcher.get(action, self.handle_other)
+            result = callback(command_body, arguments, action)
             return (result, 200) if result else (None, 204)
 
         except DataException as e:
-            error_result: Dict = self.error_schema.dump({'errors': [Error(name=e.field, error=e.message)]}).data
+            error_result: Dict = self.error_schema.dump(
+                {'errors': [Error(name=e.field, error=e.message)]}).data
             return error_result, 200
         except SlackUserException as e:
             return Message(text=e.message, response_type="ephemeral").dump(), 200
