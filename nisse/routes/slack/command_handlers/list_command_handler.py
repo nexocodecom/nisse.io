@@ -53,8 +53,7 @@ class ListCommandHandler(SlackCommandHandler):
         first_arg = next(arg_iter, None)
         second_arg = next(arg_iter, None)
         inner_user_id = self._extract_slack_user_id(first_arg)
-        time_range = self.time_ranges.get(first_arg) if self.time_ranges.__contains__(
-            first_arg) else self.time_ranges.get(second_arg)
+        time_range = first_arg if self.time_ranges.__contains__(first_arg) else second_arg
 
         if len(arguments) == 1 and inner_user_id:  # one argument, inner_user_id
             return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()
@@ -75,24 +74,26 @@ class ListCommandHandler(SlackCommandHandler):
         message = 'You have too much for me :confused:. I can only handle one or two parameters at once'
         return Message(text=message, response_type='ephemeral', mrkdwn=True)
 
-    def get_by_time_range(self, command_body, time_range):
+    def get_by_time_range(self, command_body, selected_time_range):
+        time_range = self.time_ranges.get(selected_time_range)
         if time_range is None:
             message_format = 'I am unable to understand `{0}`.\nSeems like it is not any of following: `{1}`.'
             message = message_format.format(
-                time_range, '`, `'.join(self.time_ranges.keys()))
+                selected_time_range, '`, `'.join(self.time_ranges.keys()))
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
 
         return self._get_by_user_and_time_range(command_body, None, time_range)
 
-    def get_by_user_and_time_range(self, command_body, inner_user_id, time_range):
+    def get_by_user_and_time_range(self, command_body, inner_user_id, selected_time_range):
         if inner_user_id is None:
             message = 'I do not know this guy: {0}'.format(inner_user_id)
             return Message(text=message, response_type='ephemeral')
 
+        time_range = self.time_ranges.get(selected_time_range)
         if time_range is None:
             message_format = 'I am unable to understand `{0}`.\nSeems like it is not any of following: `{1}`.'
             message = message_format.format(
-                time_range, '`, `'.join(self.time_ranges.keys()))
+                selected_time_range, '`, `'.join(self.time_ranges.keys()))
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
 
         return self._get_by_user_and_time_range(command_body, inner_user_id, time_range)
