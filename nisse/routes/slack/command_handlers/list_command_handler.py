@@ -159,7 +159,7 @@ class ListCommandHandler(SlackCommandHandler):
             )
 
         message = "These are hours submitted by *{0}* for `{1}`".format(
-            "You" if inner_user_db_id == user_db_id else inner_user.name, time_range)
+            "You" if inner_user_db_id == user_db_id else inner_user.first_name, time_range)
         attachments = list(projects.values())
 
         return Message(text=message, mrkdwn=True, response_type="ephemeral", attachments=attachments)
