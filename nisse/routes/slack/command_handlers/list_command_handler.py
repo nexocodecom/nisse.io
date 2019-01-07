@@ -53,7 +53,7 @@ class ListCommandHandler(SlackCommandHandler):
         first_arg = next(arg_iter, None)
         second_arg = next(arg_iter, None)
         inner_user_id = self._extract_slack_user_id(first_arg)        
-        time_range = first_arg if self.time_ranges.__contains__(first_arg) else second_arg
+        time_range = self.time_ranges.get(first_arg) if self.time_ranges.__contains__(first_arg) else self.time_ranges.get(second_arg)
 
         if len(arguments) == 1 and inner_user_id: #one argument, inner_user_id
             return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()
@@ -65,7 +65,7 @@ class ListCommandHandler(SlackCommandHandler):
             return self.get_by_user_and_time_range(command_body, inner_user_id, time_range).dump()
 
         if len(arguments) > 2:
-            return self.too_many_parameters()
+            return self.too_many_parameters().dump()
 
         return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()       
 
