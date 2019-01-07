@@ -12,7 +12,7 @@ from nisse.models.slack.dialog import Element, Dialog, DialogSchema
 from nisse.models.slack.message import Action, Attachment, Message, TextSelectOption
 from nisse.models.slack.payload import Payload, TimeReportingFormPayload, ReportGenerateFormPayload, \
     ReportGenerateDialogPayload, ListCommandPayload, DeleteCommandPayload, DeleteTimeEntryPayload, \
-    DeleteConfirmPayload
+    DeleteConfirmPayload, RemindTimeReportBtnPayload
 from nisse.services.exception import DataException, SlackUserException
 from nisse.services.project_service import ProjectService
 from nisse.services.user_service import *
@@ -56,19 +56,20 @@ class SlackCommandService:
     def submit_time_dialog(self, command_body, arguments, action):
         trigger_id = command_body['trigger_id']
         slack_user_id = command_body['user_id']
+        report_date = datetime.datetime.now().date().strftime("%Y-%m-%d")
 
-        self.open_time_reporting_dialog(slack_user_id, trigger_id)
+        self.open_time_reporting_dialog(slack_user_id, trigger_id, report_date)
 
         return None
 
-    def open_time_reporting_dialog(self, slack_user_id, trigger_id):
+    def open_time_reporting_dialog(self, slack_user_id, trigger_id, report_date):
         slack_user_details = self.get_user_by_slack_user_id(slack_user_id)
 
         project_options_list: List[LabelSelectOption] = self.get_projects_option_list_as_label(slack_user_details.user_id)
         user_default_project_id: str = self.get_default_project_id(project_options_list[0].value, slack_user_details)
-        today = date.today().isoformat()
+        
 
-        dialog: Dict = smh.create_time_reporting_dialog_model(today, user_default_project_id,
+        dialog: Dict = smh.create_time_reporting_dialog_model(report_date, user_default_project_id,
                                                                                    project_options_list).dump()
 
         resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog)
@@ -327,8 +328,10 @@ class SlackCommandService:
 
         return smh.create_delete_cancel_message().dump()
 
-    def submit_time_dialog_reminder(self, form: Payload):
-        self.open_time_reporting_dialog(form.user.id, form.trigger_id)
+    def submit_time_dialog_reminder(self, form: RemindTimeReportBtnPayload):        
+        report_action = form.actions['report']
+        report_date = report_action.value if report_action else datetime.datetime.now().date().strftime("%Y-%m-%d")
+        self.open_time_reporting_dialog(form.user.id, form.trigger_id, report_date)
         im_channel = self.slack_client.api_call("im.open", user=form.user.id)
         if not im_channel["ok"]:
             self.logger.error("Can't open im channel for: " + str(form.user.id) + '. ' + im_channel["error"])
