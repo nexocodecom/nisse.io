@@ -248,9 +248,11 @@ class SlackCommandService:
     def report_dialog(self, form: ReportGenerateDialogPayload):
 
         selected_period = None
-        action: Action = next(iter(form.actions), None)
+        action_key = next(iter(form.actions), None)
+        action = form.actions[action_key]
         if action and len(action.selected_options):
-            selected_period = next(iter(action.selected_options), None).value
+            selected_period_key = next(iter(action.selected_options), None)
+            selected_period = action.selected_options[selected_period_key].value
 
         start_end = get_start_end_date(selected_period)
 
