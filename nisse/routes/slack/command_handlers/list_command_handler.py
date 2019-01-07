@@ -97,25 +97,28 @@ class ListCommandHandler(SlackCommandHandler):
         user = self.get_user_by_slack_user_id(command_body['user_id'])
         inner_user = self.get_user_by_slack_user_id(
             inner_user_id) if inner_user_id else user
+
         return self.get_user_time_entries(user, inner_user, time_range)
 
-    def get_user_time_entries(self, user: User, inner_user: User, time_range_selected):
-        user_id = user.slack_user_id
-        inner_user_id = inner_user.slack_user_id
+    def get_user_time_entries(self, user: User, inner_user: User, time_range):
+        user_db_id = user.slack_user_id
+        inner_user_db_id = inner_user.slack_user_id
 
-        if inner_user_id != user_id and user.role.role != 'admin':
+        if inner_user_db_id != user_db_id and user.role.role != 'admin':
             message = "Sorry, but only admin user can see other users records :face_with_monocle:"
             return Message(text=message, response_type="ephemeral", mrkdwn=True)
 
-        start_end = get_start_end_date(time_range_selected)
+        start_end = get_start_end_date(time_range)
 
         time_records = self.user_service.get_user_time_entries(
             inner_user.user_id, start_end[0], start_end[1])
         time_records = sorted(
             time_records, key=lambda te: te.report_date, reverse=True)
 
-        if len(time_records) == 0:
-            message = "There is no time entries for `" + time_range_selected + "`"
+        if len(time_records) == 0:            
+            message = "There is no time entries for `{0}`".format(time_range)
+            if user_db_id != inner_user_db_id:
+                message = "`{0}` have not reported anything for `{1}`".format(inner_user.first_name, time_range)
             return Message(text=message, response_type="ephemeral", mrkdwn=True)
 
         projects = {}
@@ -137,13 +140,13 @@ class ListCommandHandler(SlackCommandHandler):
         projects['total'] = Attachment(
             title="Total",
             text="You reported *" + string_helper.format_duration_decimal(
-                duration_total) + "h* for `" + time_range_selected + "`",
+                duration_total) + "h* for `" + time_range + "`",
             color="#D72B3F",
             attachment_type="default",
             mrkdwn_in=["text"]
         )
 
-        if inner_user_id == user_id:
+        if inner_user_db_id == user_db_id:
             projects['footer'] = Attachment(
                 text="",
                 footer=self.config['MESSAGE_LIST_TIME_TIP'],
@@ -151,7 +154,7 @@ class ListCommandHandler(SlackCommandHandler):
             )
 
         message = "These are hours submitted by *" + (
-            "You" if inner_user_id == user_id else user.first_name) + "* for `" + time_range_selected + "`"
+            "You" if inner_user_db_id == user_db_id else user.first_name) + "* for `" + time_range + "`"
         attachments = list(projects.values())
 
         return Message(text=message, mrkdwn=True, response_type="ephemeral", attachments=attachments)
