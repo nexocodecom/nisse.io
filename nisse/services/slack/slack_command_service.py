@@ -162,7 +162,10 @@ class SlackCommandService:
                                                                          message_text).dump()
 
     def list_command_time_range_selected(self, form: ListCommandPayload):
-        action = next(iter(form.actions), None)
+        action_key = next(iter(form.actions), None)
+        if action_key is None:
+            return Message(text='Error, unable to recognize action', response_typ='ephemeral').dump()
+        action = form.actions[action_key]
         inner_user_id = action.name
         user_id = form.user.id
 
