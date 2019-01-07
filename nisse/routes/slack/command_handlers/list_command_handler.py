@@ -36,7 +36,7 @@ class ListCommandHandler(SlackCommandHandler):
         if action_key is None:
             return Message(text='No action key', response_type='ephemeral')
 
-        action = form.actions[action_key]            
+        action = form.actions[action_key]
         inner_user_id = action.name
         user_id = form.user.id
 
@@ -52,22 +52,24 @@ class ListCommandHandler(SlackCommandHandler):
         arg_iter = iter(arguments)
         first_arg = next(arg_iter, None)
         second_arg = next(arg_iter, None)
-        inner_user_id = self._extract_slack_user_id(first_arg)        
-        time_range = self.time_ranges.get(first_arg) if self.time_ranges.__contains__(first_arg) else self.time_ranges.get(second_arg)
+        inner_user_id = self._extract_slack_user_id(first_arg)
+        time_range = self.time_ranges.get(first_arg) if self.time_ranges.__contains__(
+            first_arg) else self.time_ranges.get(second_arg)
 
-        if len(arguments) == 1 and inner_user_id: #one argument, inner_user_id
+        if len(arguments) == 1 and inner_user_id:  # one argument, inner_user_id
             return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()
 
-        if len(arguments) == 1 and time_range: #one argument, time range
+        if len(arguments) == 1 and time_range:  # one argument, time range
             return self.get_by_time_range(command_body, time_range).dump()
 
-        if len(arguments) == 2 and inner_user_id and time_range: #two arguments, inner_user_id, time_range
+        # two arguments, inner_user_id, time_range
+        if len(arguments) == 2 and inner_user_id and time_range:
             return self.get_by_user_and_time_range(command_body, inner_user_id, time_range).dump()
 
         if len(arguments) > 2:
             return self.too_many_parameters().dump()
 
-        return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()       
+        return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()
 
     def too_many_parameters(self):
         message = 'You have too much for me :confused:. I can only handle one or two parameters at once'
@@ -76,21 +78,23 @@ class ListCommandHandler(SlackCommandHandler):
     def get_by_time_range(self, command_body, time_range):
         if time_range is None:
             message_format = 'I am unable to understand `{0}`.\nSeems like it is not any of following: `{1}`.'
-            message = message_format.format(time_range, '`, `'.join(self.time_ranges.keys()))
+            message = message_format.format(
+                time_range, '`, `'.join(self.time_ranges.keys()))
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
-        
+
         return self._get_by_user_and_time_range(command_body, None, time_range)
-    
+
     def get_by_user_and_time_range(self, command_body, inner_user_id, time_range):
         if inner_user_id is None:
             message = 'I do not know this guy: {0}'.format(inner_user_id)
             return Message(text=message, response_type='ephemeral')
-        
+
         if time_range is None:
             message_format = 'I am unable to understand `{0}`.\nSeems like it is not any of following: `{1}`.'
-            message = message_format.format(time_range, '`, `'.join(self.time_ranges.keys()))
+            message = message_format.format(
+                time_range, '`, `'.join(self.time_ranges.keys()))
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
-        
+
         return self._get_by_user_and_time_range(command_body, inner_user_id, time_range)
 
     def _get_by_user_and_time_range(self, command_body, inner_user_id, time_range):
@@ -115,10 +119,11 @@ class ListCommandHandler(SlackCommandHandler):
         time_records = sorted(
             time_records, key=lambda te: te.report_date, reverse=True)
 
-        if len(time_records) == 0:            
+        if len(time_records) == 0:
             message = "There is no time entries for `{0}`".format(time_range)
             if user_db_id != inner_user_db_id:
-                message = "`{0}` have not reported anything for `{1}`".format(inner_user.first_name, time_range)
+                message = "*{0}* have not reported anything for `{1}`".format(
+                    inner_user.first_name, time_range)
             return Message(text=message, response_type="ephemeral", mrkdwn=True)
 
         projects = {}
@@ -153,8 +158,8 @@ class ListCommandHandler(SlackCommandHandler):
                 mrkdwn_in=["footer"]
             )
 
-        message = "These are hours submitted by *" + (
-            "You" if inner_user_db_id == user_db_id else user.first_name) + "* for `" + time_range + "`"
+        message = "These are hours submitted by *{0}* for `{1}`.".format(
+            "You" if inner_user_db_id == user_db_id else inner_user_db_id.name, time_range)
         attachments = list(projects.values())
 
         return Message(text=message, mrkdwn=True, response_type="ephemeral", attachments=attachments)
