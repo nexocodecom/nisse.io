@@ -251,8 +251,7 @@ class SlackCommandService:
         action_key = next(iter(form.actions), None)
         action = form.actions[action_key]
         if action and len(action.selected_options):
-            selected_period_key = next(iter(action.selected_options), None)
-            selected_period = action.selected_options[selected_period_key].value
+            selected_period = next(iter(action.selected_options), None).value            
 
         start_end = get_start_end_date(selected_period)
 
