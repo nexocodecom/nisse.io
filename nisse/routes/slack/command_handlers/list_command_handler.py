@@ -107,6 +107,7 @@ class ListCommandHandler(SlackCommandHandler):
     def get_user_time_entries(self, user: User, inner_user: User, time_range):
         user_db_id = user.slack_user_id
         inner_user_db_id = inner_user.slack_user_id
+        current_user_name = "You" if inner_user_db_id == user_db_id else inner_user.first_name, time_range
 
         if inner_user_db_id != user_db_id and user.role.role != 'admin':
             message = "Sorry, but only admin user can see other users records :face_with_monocle:"
@@ -120,10 +121,8 @@ class ListCommandHandler(SlackCommandHandler):
             time_records, key=lambda te: te.report_date, reverse=True)
 
         if len(time_records) == 0:
-            message = "There is no time entries for `{0}`".format(time_range)
-            if user_db_id != inner_user_db_id:
-                message = "*{0}* have not reported anything for `{1}`".format(
-                    inner_user.first_name, time_range)
+            message = "*{0}* have not reported anything for `{1}`".format(
+                current_user_name, time_range)
             return Message(text=message, response_type="ephemeral", mrkdwn=True)
 
         projects = {}
@@ -142,10 +141,13 @@ class ListCommandHandler(SlackCommandHandler):
                     mrkdwn_in=["text"]
                 )
 
+        total_duration = string_helper.format_duration_decimal(duration_total)
+        total_message = "*{0}* reported *{1}* for `{2}`".format(
+            current_user_name, total_duration, time_range)
+
         projects['total'] = Attachment(
             title="Total",
-            text="You reported *" + string_helper.format_duration_decimal(
-                duration_total) + "h* for `" + time_range + "`",
+            text=total_message,
             color="#D72B3F",
             attachment_type="default",
             mrkdwn_in=["text"]
@@ -158,8 +160,7 @@ class ListCommandHandler(SlackCommandHandler):
                 mrkdwn_in=["footer"]
             )
 
-        message = "These are hours submitted by *{0}* for `{1}`".format(
-            "You" if inner_user_db_id == user_db_id else inner_user.first_name, time_range)
+        message = "These are hours submitted by *{0}* for `{1}`".format(current_user_name, time_range)
         attachments = list(projects.values())
 
         return Message(text=message, mrkdwn=True, response_type="ephemeral", attachments=attachments)
