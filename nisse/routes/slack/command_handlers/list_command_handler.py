@@ -158,7 +158,7 @@ class ListCommandHandler(SlackCommandHandler):
                 mrkdwn_in=["footer"]
             )
 
-        message = "These are hours submitted by *{0}* for `{1}`.".format(
+        message = "These are hours submitted by *{0}* for `{1}`".format(
             "You" if inner_user_db_id == user_db_id else inner_user_db_id.name, time_range)
         attachments = list(projects.values())
 
