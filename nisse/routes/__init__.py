@@ -13,10 +13,15 @@ def configure_oauth(app: Flask):
     app.add_url_rule('/google/nisseoauthcallback', 'nisseoauthcallback', google_nisseoauthcallback)
     app.add_url_rule('/google/revoke', 'revoke', google_revoke)
 
+def configure_url_rules(app: Flask):
+    pass
+
+
 def configure_api(api: Api):
     # Slack endpoints
     api.add_resource(SlackCommand, '/slack/command', methods=['POST'])
-    api.add_resource(SlackDialogSubmission, '/slack/dialog/submission', methods=['POST'])
+    api.add_resource(SlackDialogSubmission,
+                     '/slack/dialog/submission', methods=['POST'])
 
     # TODO: uncomment if you want to provide rest API
     # api.add_resource(ProjectREST, '/projects/<int:project_id>',
