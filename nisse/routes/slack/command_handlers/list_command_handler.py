@@ -49,43 +49,54 @@ class ListCommandHandler(SlackCommandHandler):
         return self.get_user_time_entries(user, inner_user, time_range_selected).dump()
 
     def list_command_message(self, command_body, arguments, action):
+        arg_iter = iter(arguments)
+        first_arg = next(arg_iter, None)
+        second_arg = next(arg_iter, None)
+        inner_user_id = self._extract_slack_user_id(first_arg)        
+        time_range = first_arg if self.time_ranges.__contains__(first_arg) else second_arg
 
-        message_text = "I'm going to list saved time records..."
-        inner_user_id = None
+        if len(arguments) == 1 and inner_user_id: #one argument, inner_user_id
+            return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()
 
-        if len(arguments):
-            return self.handle_message_with_args(command_body, arguments).dump()
+        if len(arguments) == 1 and time_range: #one argument, time range
+            return self.get_by_time_range(command_body, time_range).dump()
 
-        return self.create_select_period_for_listing_model(command_body, inner_user_id, message_text).dump()
+        if len(arguments) == 2 and inner_user_id and time_range: #two arguments, inner_user_id, time_range
+            return self.get_by_user_and_time_range(command_body, inner_user_id, time_range).dump()
 
-    def handle_message_with_args(self, command_body, arguments):
-        time_range, inner_user_id = None, None
-        if len(arguments) == 1:
-            time_range = self.time_ranges.get(arguments[0])
-            inner_user_id = self._extract_slack_user_id(arguments[0])
-            if inner_user_id is not None: #first arg is user id, set default time frame to prev_month
-                time_range = self.time_ranges.get('prev_month')
-        elif len(arguments) == 2:
-            inner_user_id = self._extract_slack_user_id(arguments[0])
-            time_range = self.time_ranges.get(arguments[1])
-        else:
-            message = 'You have too much for me :confused:. I can only handle one or two parameters at once'
-            return Message(text=message, response_type='ephemeral', mrkdwn=True)
+        if len(arguments) > 2:
+            return self.too_many_parameters()
 
+        return self.create_select_period_for_listing_model(command_body, inner_user_id).dump()       
+
+    def too_many_parameters(self):
+        message = 'You have too much for me :confused:. I can only handle one or two parameters at once'
+        return Message(text=message, response_type='ephemeral', mrkdwn=True)
+
+    def get_by_time_range(self, command_body, time_range):
         if time_range is None:
             message_format = 'I am unable to understand `{0}`.\nSeems like it is not any of following: `{1}`.'
-            message = message_format.format(
-                arguments[0], '`, `'.join(self.time_ranges.keys()))
+            message = message_format.format(time_range, '`, `'.join(self.time_ranges.keys()))
             return Message(text=message, response_type='ephemeral', mrkdwn=True)
-
-        if len(arguments) == 2 and inner_user_id is None:
-            message = 'I dont know this guy: {0}'.format(arguments[0])
+        
+        return self._get_by_user_and_time_range(command_body, None, time_range)
+    
+    def get_by_user_and_time_range(self, command_body, inner_user_id, time_range):
+        if inner_user_id is None:
+            message = 'I do not know this guy: {0}'.format(inner_user_id)
             return Message(text=message, response_type='ephemeral')
+        
+        if time_range is None:
+            message_format = 'I am unable to understand `{0}`.\nSeems like it is not any of following: `{1}`.'
+            message = message_format.format(time_range, '`, `'.join(self.time_ranges.keys()))
+            return Message(text=message, response_type='ephemeral', mrkdwn=True)
+        
+        return self._get_by_user_and_time_range(command_body, inner_user_id, time_range)
 
+    def _get_by_user_and_time_range(self, command_body, inner_user_id, time_range):
         user = self.get_user_by_slack_user_id(command_body['user_id'])
         inner_user = self.get_user_by_slack_user_id(
             inner_user_id) if inner_user_id else user
-
         return self.get_user_time_entries(user, inner_user, time_range)
 
     def get_user_time_entries(self, user: User, inner_user: User, time_range_selected):
@@ -145,7 +156,7 @@ class ListCommandHandler(SlackCommandHandler):
 
         return Message(text=message, mrkdwn=True, response_type="ephemeral", attachments=attachments)
 
-    def create_select_period_for_listing_model(self, command_body, inner_user_id, message_text):
+    def create_select_period_for_listing_model(self, command_body, inner_user_id):
         actions = [
             Action(
                 name=inner_user_id if inner_user_id is not None else command_body['user_id'],
@@ -168,7 +179,7 @@ class ListCommandHandler(SlackCommandHandler):
         ]
 
         return Message(
-            text=message_text,
+            text="I'm going to list saved time records...",
             response_type="ephemeral",
             mrkdwn=True,
             attachments=attachments
