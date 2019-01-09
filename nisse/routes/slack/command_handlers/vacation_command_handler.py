@@ -1,8 +1,8 @@
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 from nisse.services.user_service import UserService
 from nisse.services.project_service import Project, ProjectService
-from nisse.services.vacation_service import Vacation, VacationService
 from nisse.services.reminder_service import ReminderService
+from nisse.services.vacation_service import Vacation, VacationService
 from nisse.models.slack.dialog import Element, Dialog
 from slackclient import SlackClient
 from nisse.utils import string_helper

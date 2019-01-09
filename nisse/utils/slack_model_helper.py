@@ -57,34 +57,6 @@ def create_help_command_message(command_body) -> Message:
         attachments=attachments
     )
 
-
-def create_select_period_for_listing_model(command_body, inner_user_id, message_text):
-    actions = [
-        Action(
-            name=inner_user_id if inner_user_id is not None else command_body['user_id'],
-            text="Select time range...",
-            type=ActionType.SELECT.value,
-            options=[TextSelectOption(text=tr.value, value=tr.value) for tr in TimeRanges]
-        )
-    ]
-    attachments = [
-        Attachment(
-            text="Show record for",
-            fallback="Select time range to list saved time records",
-            color="#3AA3E3",
-            attachment_type="default",
-            callback_id=string_helper.get_full_class_name(ListCommandPayload),
-            actions=actions
-        )
-    ]
-
-    return Message(
-        text=message_text,
-        response_type="ephemeral",
-        mrkdwn=True,
-        attachments=attachments
-    )
-
 def create_select_period_for_reporting_model(command_body, inner_user_id, message_text):
     actions = [
         Action(

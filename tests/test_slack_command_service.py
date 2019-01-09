@@ -266,44 +266,6 @@ class SlackCommandServiceTests(unittest.TestCase):
     #                                       }
     #                                   ]
     #                               }, 200))
-
-    def test_list_command_time_range_selected_without_user_param_should_return_message(self):
-        # arrange
-        def slack_client_api_call_side_effect(method, **kwargs):
-            if method == "users.info":
-                return {
-                    "ok": True,
-                    "user": {
-                        "profile": {
-                            "email": "user@mail.com",
-                            "real_name_normalized": "User Name"
-                        },
-                        "is_owner": True
-                    }
-                }
-            if method == "chat.postEphemeral":
-                return {
-                    "ok": True
-                }
-
-        self.mock_slack_client.api_call.side_effect = slack_client_api_call_side_effect
-
-        mock_user = get_mocked_user()
-        self.mock_user_service.get_user_by_email.return_value = mock_user
-        self.mock_user_service.get_user_time_entries.return_value = [get_mocked_time_entry(), get_mocked_time_entry()]
-        # message_body = {
-        #     "user": {"id": "usr1"},
-        #     "channel": {"id": "ch1"},
-        #     "actions": [{"selected_options": [{"value": TimeRanges.today.value}], "name": "usr1"}]
-        # }
-        payload: ListCommandPayload = ListCommandPayload(None, None, None, None, SlackUser(id="usr1", name="Test Name"), Channel("id", "ch1"), None,
-                                                         [Action("usr1", None, None, [Option(TimeRanges.today.value)])])
-        # act
-        result = self.slack_command_service.list_command_time_range_selected(payload)
-        # assert
-        self.assertEqual(result["text"], "These are hours submitted by *You* for `" + TimeRanges.today.value + "`")
-        self.assertEqual(len(result["attachments"]), 3)
-        self.assertEqual(result["attachments"][0]["title"], "TestPr")
     
     def test_get_start_end_date_should_return_correct_start_end_date(self):
         # arrange

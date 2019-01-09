@@ -135,8 +135,9 @@ class ReportGenerateDialogPayload(Payload):
 
 class ListCommandPayload(Payload):
 
-    def handle(self, slack_command_service):
-        return slack_command_service.list_command_time_range_selected(self)
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
+        return ListCommandHandler
 
 
 class DeleteCommandPayload(Payload):
