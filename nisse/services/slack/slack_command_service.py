@@ -163,8 +163,7 @@ class SlackCommandService:
     def report_dialog(self, form: ReportGenerateDialogPayload):
 
         selected_period = None
-        action_key = next(iter(form.actions), None)
-        action = form.actions[action_key]
+        action = next(iter(form.actions.values()))
         if action and len(action.selected_options):
             selected_period = next(iter(action.selected_options), None).value            
 
@@ -294,7 +293,7 @@ class SlackCommandService:
 
     def delete_command_project_selected(self, form: Payload):
 
-        project_id_selected = form.actions[0].selected_options[0].value
+        project_id_selected = next(iter(form.actions.values())).selected_options[0].value
 
         projects = self.project_service.get_projects()
         selected_project = list_find(lambda p: str(p.project_id) == project_id_selected, projects)
@@ -310,7 +309,7 @@ class SlackCommandService:
         return smh.create_select_time_entry_model(last_time_entries, selected_project).dump()
 
     def delete_command_time_entry_selected(self, form: Payload):
-        time_entry_id_selected = form.actions[0].selected_options[0].value
+        time_entry_id_selected = next(iter(form.actions.values())).selected_options[0].value
 
         user = self.get_user_by_slack_user_id(form.user.id)
 
@@ -319,7 +318,7 @@ class SlackCommandService:
         return smh.create_delete_time_entry_model(time_entry).dump()
 
     def delete_command_time_entry_confirm_remove(self, form: Payload):
-        action_selected = form.actions[0]
+        action_selected = next(iter(form.actions.values()))
         if action_selected.name == 'remove':
             user = self.get_user_by_slack_user_id(form.user.id)
 
