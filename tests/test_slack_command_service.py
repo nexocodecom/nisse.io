@@ -12,7 +12,8 @@ from nisse.utils.date_helper import TimeRanges, get_start_end_date
 from decimal import Decimal
 from nisse.services.xlsx_document_service import XlsxDocumentService
 from flask.config import Config
-
+from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
+from nisse.models.DTO import TimeRecordDto
 
 def get_mocked_user():
     mock_user = mock.create_autospec(User)
@@ -49,14 +50,12 @@ class SlackCommandServiceTests(unittest.TestCase):
         self.mock_project_service.get_project_by_id.return_value = None
         self.mock_user_service.get_user_by_id.return_value = None
 
-        self.slack_command_service = SlackCommandService(logging.getLogger(),
-                                                         mock_project_service,
-                                                         mock_user_service,
-                                                         mock_slack_client,
-                                                         mock.create_autospec(ReportService),
-                                                         mock.create_autospec(XlsxDocumentService),
-                                                         mock.create_autospec(ReminderService),
-                                                         config_mock)
+        self.handler = SubmitTimeCommandHandler(mock.create_autospec(Config),
+                                                mock.create_autospec(logging.Logger),
+                                                mock_user_service,
+                                                mock_slack_client,
+                                                mock_project_service,
+                                                mock.create_autospec(ReminderService))
 
     def test_submit_time_dialog_for_new_user_should_call_slack_api_and_return(self):
         # arrange
@@ -86,7 +85,7 @@ class SlackCommandServiceTests(unittest.TestCase):
         self.mock_project_service.get_projects_by_user.return_value = [Project(), Project()]
 
         # act
-        self.slack_command_service.submit_time_dialog(command_body, None, None)
+        self.handler.show_dialog(command_body, None, None)
 
         # assert
         self.assertEqual(self.mock_slack_client.api_call.call_count, 1)        
@@ -124,7 +123,7 @@ class SlackCommandServiceTests(unittest.TestCase):
         self.mock_project_service.get_projects_by_user.return_value = [Project(), Project()]
 
         # act
-        self.slack_command_service.submit_time_dialog(command_body, None, None)
+        self.handler.show_dialog(command_body, None, None)
 
         # assert
         self.assertEqual(self.mock_slack_client.api_call.call_count, 1)        
@@ -162,11 +161,17 @@ class SlackCommandServiceTests(unittest.TestCase):
         mock_user.projects = []
         self.mock_user_service.add_user.return_value = mock_user
 
-        usr: SlackUser = SlackUser(id="usr1", name="Test")
-        sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "-1", "0", "comment")
-        payload: TimeReportingFormPayload = TimeReportingFormPayload(None, None, None, None, usr, None, None, sub)
+        time_record = TimeRecordDto(
+            day="2018-05-15",
+            hours=-1,
+            minutes=0,
+            comment="comment",
+            project="1",
+            user_id="usr1"
+        )
+
         # act
-        self.slack_command_service.save_submitted_time(payload)
+        self.handler.save_submitted_time_task(time_record)
 
         # assert        
         time.sleep(0.5)
@@ -204,68 +209,22 @@ class SlackCommandServiceTests(unittest.TestCase):
         self.mock_user_service.get_user_by_email.return_value = get_mocked_user()
         self.mock_user_service.get_user_time_entries.return_value = [get_mocked_time_entry(), get_mocked_time_entry()]
 
-        usr: SlackUser = SlackUser(id="usr1", name="Test")
-        sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "8", "15", "comment")
-        payload: TimeReportingFormPayload = TimeReportingFormPayload(None, None, None, None, usr, None, None, sub)
+        time_record = TimeRecordDto(
+            day="2018-05-15",
+            hours=8,
+            minutes=15,
+            comment="comment",
+            project="1",
+            user_id="usr1"
+        )
+
         # act
-        self.slack_command_service.save_submitted_time(payload)
+        self.handler.save_submitted_time_task(time_record)
 
         # assert        
         time.sleep(0.5)
         self.assertEqual(len(sent_chat_msgs), 1)
         self.assertEqual(sent_chat_msgs[0], "Sorry, but You can't submit more than 20 hours for one day.")
-
-    # def test_save_submitted_time_should_return_error_if_negative_hour(self):
-    #     # arrange
-    #     def slack_client_api_call_side_effect(method, **kwargs):
-    #         if method == "users.info":
-    #             return {
-    #                 "ok": True,
-    #                 "user": {
-    #                     "profile": {
-    #                         "email": "user@mail.com",
-    #                         "real_name_normalized": "User Name"
-    #                     }
-    #                 }
-    #             }
-    #         if method == "chat.postMessage":
-    #             return {
-    #                 "ok": True
-    #             }
-    #         if method == "im.open":
-    #             return {
-    #                 "ok": True,
-    #                 "channel": {"id": "DC123"}
-    #             }
-    #
-    #     self.mock_slack_client.api_call.side_effect = slack_client_api_call_side_effect
-    #     self.mock_user_service.get_user_by_email.return_value = get_mocked_user()
-    #     self.mock_user_service.get_user_time_entries.return_value = [get_mocked_time_entry(), get_mocked_time_entry()]
-    #     message_body = {
-    #         "user": {"id": "usr1"},
-    #         "channel": {"id": "ch1"},
-    #         "command": "/ni",
-    #         "submission": {
-    #             "day": "2018-05-15",
-    #             "duration": "-1",
-    #             "comment": "tasks done",
-    #             "project": "1"
-    #         }
-    #     }
-    #     # act
-    #     usr: SlackUser = SlackUser(id="usr1", name="Test")
-    #     sub: TimeReportingForm = TimeReportingForm("1", "2018-05-15", "-1", "task done")
-    #     payload: TimeReportingFormPayload = TimeReportingFormPayload(None, None, None, None, usr, None, None, sub)
-    #     result = self.slack_command_service.save_submitted_time(payload)
-    #     # assert
-    #     self.assertEqual(result, ({
-    #                                   "errors": [
-    #                                       {
-    #                                           "name": "duration",
-    #                                           "error": "Use numbers, e.g. 2 or 2.5 or 2.45 etc"
-    #                                       }
-    #                                   ]
-    #                               }, 200))
     
     def test_get_start_end_date_should_return_correct_start_end_date(self):
         # arrange

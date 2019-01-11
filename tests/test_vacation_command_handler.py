@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 from datetime import datetime
 import logging
 import mock
+from flask.config import Config
 
 
 class TestVacationCommanHandler(TestCase):
@@ -30,7 +31,8 @@ class TestVacationCommanHandler(TestCase):
         self.mock_project_service.get_project_by_id.return_value = None
         self.mock_user_service.get_user_by_id.return_value = None
 
-        self.handler = VacationCommandHandler(mock.create_autospec(logging.Logger),
+        self.handler = VacationCommandHandler(mock.create_autospec(Config),
+                                            mock.create_autospec(logging.Logger),
                                             mock_user_service,
                                             mock_slack_client,
                                             mock_project_service,
