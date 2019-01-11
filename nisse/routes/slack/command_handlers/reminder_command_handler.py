@@ -12,7 +12,7 @@ from nisse.services.reminder_service import ReminderService
 from nisse.services.user_service import UserService
 
 
-class SetReminderCommandHandler(SlackCommandHandler):
+class ReminderCommandHandler(SlackCommandHandler):
     @inject
     def __init__(self, config: Config, logger: Logger, user_service: UserService,
                  slack_client: SlackClient, project_service: ProjectService,

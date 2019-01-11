@@ -7,54 +7,6 @@ from nisse.utils import string_helper
 from nisse.utils.date_helper import TimeRanges
 
 
-def create_help_command_message(command_body) -> Message:
-    command_name = command_body["command"]
-
-    attachments = [
-        Attachment(
-            text="*{0}* _(without any arguments)_: Submit working time".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} list*: See reported time".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} delete*: Remove reported time".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} reminder*: See reminder settings".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} report*: Generate report file".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text='*{0} vacation*: Submit free time within range'.format(command_name),
-            attachment_type="default",
-            mrkdwn_in=['text']
-        ),
-        Attachment(
-            text="*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        )
-    ]
-
-    return Message(
-        text="*Nisse* is used for reporting working time. Following commands are available:",
-        mrkdwn=True,
-        response_type="default",
-        attachments=attachments
-    )
-
 def create_select_period_for_reporting_model(command_body, inner_user_id, message_text):
     actions = [
         Action(

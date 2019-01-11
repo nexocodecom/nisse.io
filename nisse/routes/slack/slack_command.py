@@ -8,7 +8,8 @@ from flask_restful import Resource
 from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
-from nisse.routes.slack.command_handlers.set_reminder_commane_handler import SetReminderCommandHandler
+from nisse.routes.slack.command_handlers.reminder_command_handler import ReminderCommandHandler
+from nisse.routes.slack.command_handlers.show_help_command_handler import ShowHelpCommandHandler
 from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
 from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
 from nisse.services.exception import DataException, SlackUserException
@@ -21,7 +22,9 @@ class SlackCommand(Resource):
     def __init__(self, app: Flask, slack_command_service: SlackCommandService,
                  vacation_command_handler: VacationCommandHandler,
                  submit_time_command_handler: SubmitTimeCommandHandler,
-                 list_command_handler: ListCommandHandler, set_reminder_handler: SetReminderCommandHandler):
+                 list_command_handler: ListCommandHandler,
+                 set_reminder_handler: ReminderCommandHandler,
+                 show_help_handler: ShowHelpCommandHandler):
         self.app = app
         self.slack_command_service = slack_command_service
         self.set_reminder_handler = set_reminder_handler
@@ -34,7 +37,7 @@ class SlackCommand(Resource):
             'delete': self.slack_command_service.delete_command_message,
             'vacation': vacation_command_handler.show_dialog,
             'reminder': self.reminder,
-            'help': self.slack_command_service.help_command_message
+            'help': show_help_handler.create_help_command_message
         }
 
     def post(self):

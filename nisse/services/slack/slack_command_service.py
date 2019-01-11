@@ -259,10 +259,6 @@ class SlackCommandService:
                                  slack_user_details['user']['is_owner'])
         return user
 
-    @staticmethod
-    def help_command_message(command_body, arguments, action):
-        return smh.create_help_command_message(command_body).dump()
-
     def get_or_add_user(self, user_email, user_name, slack_user_id, is_owner=False):
         user = self.user_service.get_user_by_email(user_email)
         if user is None:
