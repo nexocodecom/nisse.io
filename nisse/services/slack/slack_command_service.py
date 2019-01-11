@@ -1,33 +1,28 @@
 import logging
-from datetime import timedelta, date
-from decimal import Decimal
-from threading import Thread
-from typing import Dict
+import os
+import uuid
 
+from flask import current_app
+from flask.config import Config
 from slackclient import SlackClient
+from werkzeug.utils import secure_filename
 
-from nisse.models.DTO import TimeRecordDto, PrintParametersDto
-from nisse.models.slack.common import ActionType, LabelSelectOption, Option
+from nisse.models.DTO import PrintParametersDto
+from nisse.models.slack.common import LabelSelectOption
 from nisse.models.slack.dialog import Element, Dialog, DialogSchema
-from nisse.models.slack.message import Action, Attachment, Message, TextSelectOption
-from nisse.models.slack.payload import Payload, TimeReportingFormPayload, ReportGenerateFormPayload, \
-    ReportGenerateDialogPayload, ListCommandPayload, DeleteCommandPayload, DeleteTimeEntryPayload, \
-    DeleteConfirmPayload, RemindTimeReportBtnPayload
-from nisse.services.exception import DataException, SlackUserException
+from nisse.models.slack.message import TextSelectOption
+from nisse.models.slack.payload import Payload, ReportGenerateFormPayload, \
+    ReportGenerateDialogPayload, RemindTimeReportBtnPayload
+from nisse.services.exception import SlackUserException
 from nisse.services.project_service import ProjectService
-from nisse.services.user_service import *
 from nisse.services.reminder_service import ReminderService
 from nisse.services.report_service import ReportService
+from nisse.services.user_service import *
 from nisse.services.xlsx_document_service import XlsxDocumentService
-from nisse.utils.date_helper import get_start_end_date, get_float_duration
 from nisse.utils import slack_model_helper as smh
 from nisse.utils import string_helper
+from nisse.utils.date_helper import get_start_end_date
 from nisse.utils.validation_helper import *
-import os
-from werkzeug.utils import secure_filename
-import uuid
-from flask import Flask, current_app
-from flask.config import Config
 
 DEFAULT_REMIND_TIME_FOR_NEWLY_ADDED_USER = "16:00"
 
@@ -170,25 +165,6 @@ class SlackCommandService:
 
         return None
 
-    def reminder_show(self, command_body, arguments, action):
-        command_name = command_body["command"]
-        user = self.get_user_by_slack_user_id(command_body['user_id'])
-
-        day_configuration = self.reminder_service.get_user_reminder_config(user)
-
-        return smh.create_reminder_info_model(command_name, day_configuration).dump()
-
-    def reminder_set(self, command_body, arguments, action):
-        user = self.get_user_by_slack_user_id(command_body['user_id'])
-
-        index = command_body['text'].find('set') + len('set ')
-
-        if self.reminder_service.set_user_reminder_config(user, command_body['text'][index:]):
-            return "Remind times set"
-        else:
-            raise DataException(field="user",
-                                message="incorrect format. Examples: /reminder set 15:15 /reminder set mon:15:15;tue:13:14;sat:18:10 ")
-
     def delete_command_message(self, command_body, arguments, action):
         user = self.user_service.get_user_by_slack_id(command_body['user_id'])
 
@@ -257,9 +233,6 @@ class SlackCommandService:
             self.logger.error("Can't delete message: " + resp.get("error"))
 
         return None
-
-    def dayoff_command_message(self, command_body, arguments, action):
-        return Message().dump()
 
     def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
         # todo cache it globally e.g. Flask-Cache

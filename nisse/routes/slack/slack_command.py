@@ -1,16 +1,17 @@
-from flask import Flask, jsonify
+from typing import Dict
+
+from flask import Flask
 from flask import request
 from flask_injector import inject
 from flask_restful import Resource
-from marshmallow import ValidationError
-from typing import Dict
 
 from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
-from nisse.services.exception import DataException, SlackUserException
-from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
-from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
+from nisse.routes.slack.command_handlers.set_reminder_commane_handler import SetReminderCommandHandler
+from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
+from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+from nisse.services.exception import DataException, SlackUserException
 from nisse.services.slack.slack_command_service import SlackCommandService
 
 
@@ -20,9 +21,10 @@ class SlackCommand(Resource):
     def __init__(self, app: Flask, slack_command_service: SlackCommandService,
                  vacation_command_handler: VacationCommandHandler,
                  submit_time_command_handler: SubmitTimeCommandHandler,
-                 list_command_handler: ListCommandHandler):
+                 list_command_handler: ListCommandHandler, set_reminder_handler: SetReminderCommandHandler):
         self.app = app
         self.slack_command_service = slack_command_service
+        self.set_reminder_handler = set_reminder_handler
         self.error_schema = ErrorSchema()
         self.dispatcher = {
             None: submit_time_command_handler.show_dialog,
@@ -63,9 +65,9 @@ class SlackCommand(Resource):
 
     def reminder(self, command_body, arguments, action):
         if not arguments or arguments[0] == "show":
-            return self.slack_command_service.reminder_show(command_body, arguments, action)
+            return self.set_reminder_handler.reminder_show(command_body, arguments, action)
         if arguments[0] == "set":
-            return self.slack_command_service.reminder_set(command_body, arguments, action)
+            return self.set_reminder_handler.reminder_set(command_body, arguments, action)
 
     @staticmethod
     def handle_other(commands_body, arguments, action):

@@ -1,13 +1,11 @@
-from typing import List
-
 from nisse.models import TimeEntry
-from nisse.models.slack.common import ActionType, LabelSelectOption
+from nisse.models.slack.common import ActionType
 from nisse.models.slack.dialog import Element, Dialog
 from nisse.models.slack.message import Attachment, Message, Action, TextSelectOption
-from nisse.models.slack.payload import ListCommandPayload, TimeReportingFormPayload, ReportGenerateFormPayload, ReportGenerateDialogPayload, DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
+from nisse.models.slack.payload import ReportGenerateFormPayload, ReportGenerateDialogPayload, DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
 from nisse.utils import string_helper
 from nisse.utils.date_helper import TimeRanges
-from flask import current_app
+
 
 def create_help_command_message(command_body) -> Message:
     command_name = command_body["command"]
@@ -92,30 +90,6 @@ def create_generate_report_dialog_model(previous_week, project_options_list, tod
     ]
 
     return Dialog(title="Generate report", submit_label="Generate", callback_id=string_helper.get_full_class_name(ReportGenerateFormPayload), elements=elements)
-
-
-def create_reminder_info_model(command_name, day_configuration):
-    attachments = [
-        Attachment(
-            text=day_time,
-            color="#D72B3F" if "OFF" in day_time else "#3AA3E3",
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ) for day_time in day_configuration
-    ]
-    attachments.append(
-        Attachment(
-            text="",
-            footer= current_app.config['MESSAGE_REMINDER_SET_TIP'].format(command_name),
-            mrkdwn_in=["text", "footer"]
-        )
-    )
-    return Message(
-        text="Your reminder time is as follow:",
-        response_type="ephemeral",
-        mrkdwn=True,
-        attachments=attachments
-    )
 
 
 def create_select_project_model(project_options_list, user_default_project_id):
