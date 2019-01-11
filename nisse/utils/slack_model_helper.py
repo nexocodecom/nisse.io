@@ -1,61 +1,11 @@
-from typing import List
-
 from nisse.models import TimeEntry
-from nisse.models.slack.common import ActionType, LabelSelectOption
+from nisse.models.slack.common import ActionType
 from nisse.models.slack.dialog import Element, Dialog
 from nisse.models.slack.message import Attachment, Message, Action, TextSelectOption
-from nisse.models.slack.payload import ListCommandPayload, TimeReportingFormPayload, ReportGenerateFormPayload, ReportGenerateDialogPayload, DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
+from nisse.models.slack.payload import ReportGenerateFormPayload, ReportGenerateDialogPayload, DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
 from nisse.utils import string_helper
 from nisse.utils.date_helper import TimeRanges
-from flask import current_app
 
-def create_help_command_message(command_body) -> Message:
-    command_name = command_body["command"]
-
-    attachments = [
-        Attachment(
-            text="*{0}* _(without any arguments)_: Submit working time".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} list*: See reported time".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} delete*: Remove reported time".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} reminder*: See reminder settings".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text="*{0} report*: Generate report file".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ),
-        Attachment(
-            text='*{0} vacation*: Submit free time within range'.format(command_name),
-            attachment_type="default",
-            mrkdwn_in=['text']
-        ),
-        Attachment(
-            text="*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(command_name),
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        )
-    ]
-
-    return Message(
-        text="*Nisse* is used for reporting working time. Following commands are available:",
-        mrkdwn=True,
-        response_type="default",
-        attachments=attachments
-    )
 
 def create_select_period_for_reporting_model(command_body, inner_user_id, message_text):
     actions = [
@@ -92,30 +42,6 @@ def create_generate_report_dialog_model(previous_week, project_options_list, tod
     ]
 
     return Dialog(title="Generate report", submit_label="Generate", callback_id=string_helper.get_full_class_name(ReportGenerateFormPayload), elements=elements)
-
-
-def create_reminder_info_model(command_name, day_configuration):
-    attachments = [
-        Attachment(
-            text=day_time,
-            color="#D72B3F" if "OFF" in day_time else "#3AA3E3",
-            attachment_type="default",
-            mrkdwn_in=["text"]
-        ) for day_time in day_configuration
-    ]
-    attachments.append(
-        Attachment(
-            text="",
-            footer= current_app.config['MESSAGE_REMINDER_SET_TIP'].format(command_name),
-            mrkdwn_in=["text", "footer"]
-        )
-    )
-    return Message(
-        text="Your reminder time is as follow:",
-        response_type="ephemeral",
-        mrkdwn=True,
-        attachments=attachments
-    )
 
 
 def create_select_project_model(project_options_list, user_default_project_id):
