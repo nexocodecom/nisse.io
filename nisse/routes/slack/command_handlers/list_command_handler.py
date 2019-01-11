@@ -16,11 +16,10 @@ from nisse.utils.date_helper import get_start_end_date, get_float_duration, Time
 
 class ListCommandHandler(SlackCommandHandler):
     @inject
-    def __init__(self, logger: Logger, user_service: UserService,
+    def __init__(self, config: Config, logger: Logger, user_service: UserService,
                  slack_client: SlackClient, project_service: ProjectService,
-                 reminder_service: ReminderService, config: Config):
-        super().__init__(logger, user_service, slack_client, project_service, reminder_service)
-        self.config = config
+                 reminder_service: ReminderService):
+        super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
         self.time_ranges = {
             'today': 'Today',
             'yesterday': 'Yesterday',

@@ -10,13 +10,17 @@ from nisse.models.slack.payload import Payload
 from nisse.services.exception import DataException, SlackUserException
 from nisse.models.slack.dialog import Dialog
 from datetime import datetime
+from flask.config import Config
 
 USER_ROLE_USER = 'user'
 USER_ROLE_ADMIN = 'admin'
 DEFAULT_REMIND_TIME_FOR_NEWLY_ADDED_USER = "16:00"
 
+
 class SlackCommandHandler(ABC):
-    def __init__(self, logger: logging.Logger, user_service: UserService, slack_client: SlackClient, project_service: ProjectService, reminder_service: ReminderService):
+    def __init__(self, config: Config, logger: logging.Logger, user_service: UserService, slack_client: SlackClient,
+                 project_service: ProjectService, reminder_service: ReminderService):
+        self.config = config
         self.user_service = user_service
         self.logger = logger
         self.slack_client = slack_client

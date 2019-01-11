@@ -29,7 +29,6 @@ import uuid
 from flask import Flask, current_app
 from flask.config import Config
 
-DAILY_HOUR_LIMIT = 20
 DEFAULT_REMIND_TIME_FOR_NEWLY_ADDED_USER = "16:00"
 
 
@@ -53,99 +52,6 @@ class SlackCommandService:
         self.dialog_schema = DialogSchema()
         self.config = config
 
-    def submit_time_dialog(self, command_body, arguments, action):
-        trigger_id = command_body['trigger_id']
-        slack_user_id = command_body['user_id']
-        report_date = datetime.datetime.now().date().strftime("%Y-%m-%d")
-
-        self.open_time_reporting_dialog(slack_user_id, trigger_id, report_date)
-
-        return None
-
-    def open_time_reporting_dialog(self, slack_user_id, trigger_id, report_date):
-        slack_user_details = self.get_user_by_slack_user_id(slack_user_id)
-
-        project_options_list: List[LabelSelectOption] = self.get_projects_option_list_as_label(slack_user_details.user_id)
-        user_default_project_id: str = self.get_default_project_id(project_options_list[0].value, slack_user_details)
-        
-
-        dialog: Dict = smh.create_time_reporting_dialog_model(report_date, user_default_project_id,
-                                                                                   project_options_list).dump()
-
-        resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog)
-        if not resp["ok"]:
-            self.logger.error("Can't open dialog submit time: " + resp.get("error"))
-
-    def save_submitted_time(self, form: TimeReportingFormPayload):
-        time_record = TimeRecordDto(
-            day=form.submission.day,
-            hours=int(form.submission.hours),
-            minutes=int(form.submission.minutes),
-            comment=form.submission.comment,
-            project=form.submission.project,
-            user_id=form.user.id
-        )
-
-        self.save_submitted_time_task(time_record)
-
-    def save_submitted_time_task(self, time_record: TimeRecordDto):
-
-        user = self.get_user_by_slack_user_id(time_record.user_id)
-
-        im_channel = self.slack_client.api_call("im.open", user=time_record.user_id)
-
-        if not im_channel["ok"]:
-            self.logger.error("Can't open im channel for: " + str(time_record.user_id) + '. ' + im_channel["error"])
-            return
-
-        # todo cache projects globally e.g. Flask-Cache
-        projects = self.project_service.get_projects()
-        selected_project = list_find(lambda p: str(p.project_id) == time_record.project, projects)
-
-        if selected_project is None:
-            self.logger.error("Project doesn't exist: " + time_record.project)
-            return
-
-        if list_find(lambda p: str(p.project_id) == time_record.project, user.user_projects) is None:
-            self.project_service.assign_user_to_project(project=selected_project, user=user)
-
-            # check if submitted hours doesn't exceed the limit
-        submitted_time_entries = self.user_service.get_user_time_entries(user.user_id, time_record.get_parsed_date(),
-                                                                         time_record.get_parsed_date())
-        duration_float: float = get_float_duration(time_record.hours, time_record.minutes)
-        if sum([te.duration for te in submitted_time_entries]) + Decimal(duration_float) > DAILY_HOUR_LIMIT:
-            self.slack_client.api_call(
-                "chat.postMessage",
-                channel=im_channel['channel']['id'],
-                text="Sorry, but You can't submit more than " + str(DAILY_HOUR_LIMIT) + " hours for one day.",
-                as_user=True
-            )
-            return
-
-        self.project_service.report_user_time(selected_project, user, duration_float, time_record.comment,
-                                              time_record.get_parsed_date())
-
-        attachments = [Attachment(
-            title='Submitted ' + string_helper.format_duration_decimal(Decimal(duration_float)) + ' hour(s) for ' + \
-                  (
-                      'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name,
-            text="_" + time_record.comment + "_",
-            mrkdwn_in=["text", "footer"],
-            footer=self.config['MESSAGE_SUBMIT_TIME_TIP']
-        ).dump()]
-
-        resp = self.slack_client.api_call(
-            "chat.postMessage",
-            channel=im_channel['channel']['id'],
-            attachments=attachments,
-            as_user=True
-        )
-
-        if not resp["ok"]:
-            self.logger.error("Can't post message: " + resp.get("error"))
-
-        return
-
     def report_pre_dialog(self, command_body, arguments, action):
 
         message_text = "I'm going to generate report..."
@@ -163,8 +69,7 @@ class SlackCommandService:
     def report_dialog(self, form: ReportGenerateDialogPayload):
 
         selected_period = None
-        action_key = next(iter(form.actions), None)
-        action = form.actions[action_key]
+        action = next(iter(form.actions.values()))
         if action and len(action.selected_options):
             selected_period = next(iter(action.selected_options), None).value            
 
@@ -292,9 +197,18 @@ class SlackCommandService:
 
         return smh.create_select_project_model(project_options_list, user_default_project_id).dump()
 
+    # TODO move to helper class
+    def get_default_project_id(self, first_id: str, user) -> str:
+        if user is not None:
+            user_last_time_entry = self.user_service.get_user_last_time_entry(user.user_id)
+            if user_last_time_entry is not None:
+                return user_last_time_entry.project.project_id
+
+        return first_id
+
     def delete_command_project_selected(self, form: Payload):
 
-        project_id_selected = form.actions[0].selected_options[0].value
+        project_id_selected = next(iter(form.actions.values())).selected_options[0].value
 
         projects = self.project_service.get_projects()
         selected_project = list_find(lambda p: str(p.project_id) == project_id_selected, projects)
@@ -310,7 +224,7 @@ class SlackCommandService:
         return smh.create_select_time_entry_model(last_time_entries, selected_project).dump()
 
     def delete_command_time_entry_selected(self, form: Payload):
-        time_entry_id_selected = form.actions[0].selected_options[0].value
+        time_entry_id_selected = next(iter(form.actions.values())).selected_options[0].value
 
         user = self.get_user_by_slack_user_id(form.user.id)
 
@@ -319,7 +233,7 @@ class SlackCommandService:
         return smh.create_delete_time_entry_model(time_entry).dump()
 
     def delete_command_time_entry_confirm_remove(self, form: Payload):
-        action_selected = form.actions[0]
+        action_selected = next(iter(form.actions.values()))
         if action_selected.name == 'remove':
             user = self.get_user_by_slack_user_id(form.user.id)
 
@@ -347,11 +261,6 @@ class SlackCommandService:
     def dayoff_command_message(self, command_body, arguments, action):
         return Message().dump()
 
-    def get_projects_option_list_as_label(self, user_id=None) -> List[LabelSelectOption]:
-        # todo cache it globally e.g. Flask-Cache        
-        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
-        return [LabelSelectOption(p.name, p.project_id) for p in projects]
-
     def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
         # todo cache it globally e.g. Flask-Cache
         projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
@@ -376,14 +285,6 @@ class SlackCommandService:
                                  slack_user_id,
                                  slack_user_details['user']['is_owner'])
         return user
-
-    def get_default_project_id(self, first_id: str, user) -> str:
-        if user is not None:
-            user_last_time_entry = self.user_service.get_user_last_time_entry(user.user_id)
-            if user_last_time_entry is not None:
-                return user_last_time_entry.project.project_id
-
-        return first_id
 
     @staticmethod
     def help_command_message(command_body, arguments, action):

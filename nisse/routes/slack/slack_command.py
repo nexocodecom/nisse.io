@@ -9,27 +9,28 @@ from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
 from nisse.services.exception import DataException, SlackUserException
 from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
 from nisse.services.slack.slack_command_service import SlackCommandService
-
 
 
 class SlackCommand(Resource):
 
     @inject
-    def __init__(self, app: Flask, slack_command_service: SlackCommandService, 
-        vacationCommandHandler: VacationCommandHandler,
-        listCommandHandler: ListCommandHandler):
+    def __init__(self, app: Flask, slack_command_service: SlackCommandService,
+                 vacation_command_handler: VacationCommandHandler,
+                 submit_time_command_handler: SubmitTimeCommandHandler,
+                 list_command_handler: ListCommandHandler):
         self.app = app
         self.slack_command_service = slack_command_service
         self.error_schema = ErrorSchema()
         self.dispatcher = {
-            None: self.slack_command_service.submit_time_dialog,
-            "": self.slack_command_service.submit_time_dialog,
-            'list': listCommandHandler.list_command_message,
+            None: submit_time_command_handler.show_dialog,
+            "": submit_time_command_handler.show_dialog,
+            'list': list_command_handler.list_command_message,
             'report': self.slack_command_service.report_pre_dialog,
             'delete': self.slack_command_service.delete_command_message,
-            'vacation': vacationCommandHandler.show_dialog,
+            'vacation': vacation_command_handler.show_dialog,
             'reminder': self.reminder,
             'help': self.slack_command_service.help_command_message
         }
