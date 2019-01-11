@@ -93,7 +93,8 @@ class Payload(object):
 
 
 class RequestFreeDaysPayload(Payload):
-    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url, submission: RequestFreeDaysForm, actions=None, trigger_id=None, messages_ts=None):
+    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
+                 submission: RequestFreeDaysForm, actions=None, trigger_id=None, messages_ts=None):
         super().__init__(type, token, action_ts, team, user, channel,
                          response_url, actions, trigger_id, messages_ts)
         self.submission = submission
@@ -105,19 +106,22 @@ class RequestFreeDaysPayload(Payload):
 
 class TimeReportingFormPayload(Payload):
 
-    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url, submission: TimeReportingForm, actions=None, trigger_id=None,
+    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
+                 submission: TimeReportingForm, actions=None, trigger_id=None,
                  messages_ts=None):
         super().__init__(type, token, action_ts, team, user, channel,
                          response_url, actions, trigger_id, messages_ts)
         self.submission = submission
 
-    def handle(self, slack_command_service):
-        return slack_command_service.save_submitted_time(self)
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
+        return SubmitTimeCommandHandler
 
 
 class ReportGenerateFormPayload(Payload):
 
-    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url, submission: ReportGenerateForm, actions=None, trigger_id=None,
+    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
+                 submission: ReportGenerateForm, actions=None, trigger_id=None,
                  messages_ts=None):
         super().__init__(type, token, action_ts, team, user, channel,
                          response_url, actions, trigger_id, messages_ts)
@@ -322,6 +326,7 @@ class RemindTimeReportBtnPayloadSchema(PayloadSchema):
     @post_load
     def make_obj(self, data):
         return RemindTimeReportBtnPayload(**data)
+
 
 class RequestFreeDaysFormSchema(PayloadSchema):    
     start_date = fields.String(validate=check_date)

@@ -13,17 +13,18 @@ from nisse.utils.date_helper import parse_formatted_datetime
 from datetime import datetime, timedelta
 from marshmallow import ValidationError
 from nisse.services import GoogleCalendarService
+from flask.config import Config
 
 
 class VacationCommandHandler(SlackCommandHandler):
 
     @inject
-    def __init__(self, logger: logging.Logger, user_service: UserService, 
+    def __init__(self, config: Config, logger: logging.Logger, user_service: UserService,
         slack_client: SlackClient, project_service: ProjectService, 
         reminder_service: ReminderService, vacation_service: VacationService,
         calendar_service: GoogleCalendarService
         ):
-        super().__init__(logger, user_service, slack_client, project_service, reminder_service)
+        super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
         self.vacation_service = vacation_service
         self.calendar_service = calendar_service
 
