@@ -45,12 +45,12 @@ class TestVacationCommanHandler(TestCase):
         self.mock_project_service.get_project_by_id.return_value = None
         self.mock_user_service.get_user_by_id.return_value = None
 
-        self.handler = ListCommandHandler(mock.create_autospec(logging.Logger),
+        self.handler = ListCommandHandler(config_mock,
+                                            mock.create_autospec(logging.Logger),
                                             mock_user_service,
                                             mock_slack_client,
                                             mock_project_service,
-                                            mock.create_autospec(ReminderService),
-                                            config_mock)
+                                            mock.create_autospec(ReminderService))
     
     def test_list_command_time_range_selected_without_user_param_should_return_message(self):
         # arrange
