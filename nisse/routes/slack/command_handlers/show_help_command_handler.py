@@ -20,8 +20,8 @@ class ShowHelpCommandHandler(SlackCommandHandler):
                  reminder_service: ReminderService):
         super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
 
-    def create_help_command_message(self, command_body, arguments, action) -> Message:
-        command_name = command_body['command']
+    def create_help_command_message(self, command_body, arguments, action):
+        command_name = command_body["command"]
 
         attachments = [
             Attachment(
