@@ -1,16 +1,16 @@
+import logging
 from abc import ABC
+from datetime import datetime
 
+from flask.config import Config
+from slackclient import SlackClient
 
-from nisse.services.user_service import UserService
+from nisse.models.slack.dialog import Dialog
+from nisse.models.slack.payload import Payload
+from nisse.services.exception import SlackUserException
 from nisse.services.project_service import Project, ProjectService
 from nisse.services.reminder_service import ReminderService
-from slackclient import SlackClient
-import logging
-from nisse.models.slack.payload import Payload
-from nisse.services.exception import DataException, SlackUserException
-from nisse.models.slack.dialog import Dialog
-from datetime import datetime
-from flask.config import Config
+from nisse.services.user_service import UserService
 
 USER_ROLE_USER = 'user'
 USER_ROLE_ADMIN = 'admin'
@@ -79,7 +79,6 @@ class SlackCommandHandler(ABC):
         resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog)
         if not resp["ok"]:
             self.logger.error("Can't open dialog submit time: " + resp.get("error"))
-
 
     def current_date(self) -> datetime:
         return datetime.now()
