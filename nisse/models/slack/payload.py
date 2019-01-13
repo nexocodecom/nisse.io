@@ -1,6 +1,6 @@
 from datetime import date
 
-from marshmallow import Schema, fields, post_load, ValidationError, validates_schema
+from marshmallow import Schema, fields, post_load, ValidationError
 from marshmallow_oneofschema import OneOfSchema
 
 from nisse.utils.string_helper import get_full_class_name
@@ -164,9 +164,9 @@ class DeleteConfirmPayload(Payload):
 
 class RemindTimeReportBtnPayload(Payload):
 
-    def handle(self, slack_command_service):
-        return slack_command_service.submit_time_dialog_reminder(self)
-
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.submit_time_button_handler import SubmitTimeButtonHandler
+        return SubmitTimeButtonHandler
 
 class UserSchema(Schema):
     id = fields.String()

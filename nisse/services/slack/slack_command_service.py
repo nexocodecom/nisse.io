@@ -12,7 +12,7 @@ from nisse.models.slack.common import LabelSelectOption
 from nisse.models.slack.dialog import Element, Dialog, DialogSchema
 from nisse.models.slack.message import TextSelectOption
 from nisse.models.slack.payload import Payload, ReportGenerateFormPayload, \
-    ReportGenerateDialogPayload, RemindTimeReportBtnPayload
+    ReportGenerateDialogPayload
 from nisse.services.exception import SlackUserException
 from nisse.services.project_service import ProjectService
 from nisse.services.reminder_service import ReminderService
@@ -218,21 +218,6 @@ class SlackCommandService:
             return smh.create_delete_successful_message().dump()
 
         return smh.create_delete_cancel_message().dump()
-
-    def submit_time_dialog_reminder(self, form: RemindTimeReportBtnPayload):        
-        report_action = form.actions['report']
-        report_date = report_action.value if report_action else datetime.datetime.now().date().strftime("%Y-%m-%d")
-        self.open_time_reporting_dialog(form.user.id, form.trigger_id, report_date)
-        im_channel = self.slack_client.api_call("im.open", user=form.user.id)
-        if not im_channel["ok"]:
-            self.logger.error("Can't open im channel for: " + str(form.user.id) + '. ' + im_channel["error"])
-
-        resp = self.slack_client.api_call("chat.delete", channel=im_channel['channel']['id'], ts=form.messages_ts,
-                                          as_user=True)
-        if not resp["ok"]:
-            self.logger.error("Can't delete message: " + resp.get("error"))
-
-        return None
 
     def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
         # todo cache it globally e.g. Flask-Cache

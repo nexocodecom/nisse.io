@@ -1,19 +1,21 @@
-from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
-from nisse.services.user_service import UserService
-from nisse.services.project_service import Project, ProjectService
-from nisse.services.reminder_service import ReminderService
-from nisse.services.vacation_service import Vacation, VacationService
-from nisse.models.slack.dialog import Element, Dialog
-from slackclient import SlackClient
-from nisse.utils import string_helper
 import logging
-from nisse.models.slack.payload import RequestFreeDaysPayload
-from flask_injector import inject
-from nisse.utils.date_helper import parse_formatted_datetime
 from datetime import datetime, timedelta
-from marshmallow import ValidationError
-from nisse.services import GoogleCalendarService
+
 from flask.config import Config
+from flask_injector import inject
+from marshmallow import ValidationError
+from slackclient import SlackClient
+
+from nisse.models.slack.dialog import Element, Dialog
+from nisse.models.slack.payload import RequestFreeDaysPayload
+from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
+from nisse.services import GoogleCalendarService
+from nisse.services.project_service import ProjectService
+from nisse.services.reminder_service import ReminderService
+from nisse.services.user_service import UserService
+from nisse.services.vacation_service import VacationService
+from nisse.utils import string_helper
+from nisse.utils.date_helper import parse_formatted_datetime
 
 
 class VacationCommandHandler(SlackCommandHandler):
@@ -50,7 +52,7 @@ class VacationCommandHandler(SlackCommandHandler):
                 raise ValidationError('Vacation must not end within other vacation. Conflicting vacation: {0} to {1}'.format(vacation.start_date.date(), vacation.end_date.date()), ['end_date'])
 
         self.vacation_service.insert_user_vacation(user.user_id, start_date, end_date, payload.submission.reason)
-        self.calendar_service.report_free_day(payload.user.name, user.username, start_date, end_date, payload.submission.reason)
+        self.calendar_service.report_free_day("{0} {1}".format(user.first_name, user.last_name), user.username, start_date, end_date, payload.submission.reason)
         self.send_message_to_client(payload.user.id, "Reported vacation from `{0}` to `{1}`. Reason: `{2}`".format(start_date.strftime("%A, %d %B"), end_date.strftime("%A, %d %B"), payload.submission.reason))
 
     def create_dialog(self, command_body, argument, action) -> Dialog:
