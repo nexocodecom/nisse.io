@@ -2,18 +2,17 @@ import logging
 import time
 import unittest
 from datetime import datetime
-import mock
-from nisse.models.database import Project, User, TimeEntry
-from nisse.models.slack.payload import ListCommandPayload, SlackUser, Channel, Action, Option, TimeReportingFormPayload, TimeReportingForm
-from nisse.services import SlackCommandService
-from nisse.services.reminder_service import ReminderService
-from nisse.services.report_service import ReportService
-from nisse.utils.date_helper import TimeRanges, get_start_end_date
 from decimal import Decimal
-from nisse.services.xlsx_document_service import XlsxDocumentService
+
+import mock
 from flask.config import Config
-from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
+
 from nisse.models.DTO import TimeRecordDto
+from nisse.models.database import Project, User, TimeEntry
+from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
+from nisse.services.reminder_service import ReminderService
+from nisse.utils.date_helper import TimeRanges, get_start_end_date
+
 
 def get_mocked_user():
     mock_user = mock.create_autospec(User)
