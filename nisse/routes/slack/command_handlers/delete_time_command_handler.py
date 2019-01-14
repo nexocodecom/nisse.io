@@ -28,8 +28,8 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
 
     def handle(self, payload: DeleteTimeEntryPayload):
 
-        action_name = next(iter(payload.actions.keys()))
-        action = next(iter(payload.actions.values()))
+        action_name = next(iter(payload.actions))
+        action = payload.actions[action_name]
         user = self.get_user_by_slack_user_id(payload.user.id)
 
         if action_name == 'projects_list':
@@ -48,70 +48,23 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
                     mrkdwn=True
                 ).dump()
 
-            actions = [
-                Action(
-                    name="time_entries_list",
-                    text="Select time entry",
-                    type=ActionType.SELECT.value,
-                    options=[TextSelectOption(text=string_helper.make_option_time_string(te), value=te.time_entry_id)
-                             for te in last_time_entries]
-                ),
-            ]
-            attachments = [
-                Attachment(
-                    text="Select time entry to remove",
-                    fallback="Select time entry",
-                    color="#3AA3E3",
-                    attachment_type="default",
-                    callback_id=string_helper.get_full_class_name(DeleteTimeEntryPayload),
-                    actions=actions
-                )
-            ]
-            return Message(
-                text="There are the last time entries for *" + selected_project.name + "*:",
-                response_type="ephemeral",
-                mrkdwn=True,
-                attachments=attachments
-            ).dump()
+            return DeleteTimeCommandHandler.create_project_selected_message(last_time_entries, selected_project).dump()
 
         elif action_name == 'time_entries_list':
             # time entry selected
             time_entry_id_selected = action.selected_options[0].value
             time_entry: TimeEntry = self.user_service.get_time_entry(user.user_id, time_entry_id_selected)
 
-            actions = [
-                Action(name="remove", text="Remove", style="danger", type=ActionType.BUTTON.value,
-                       value=str(time_entry.time_entry_id)),
-                Action(name="cancel", text="Cancel", type=ActionType.BUTTON.value, value="remove")
-            ]
-            attachments = [
-                Attachment(
-                    text="Click 'Remove' to confirm:",
-                    color="#3AA3E3", attachment_type="default",
-                    callback_id=string_helper.get_full_class_name(DeleteTimeEntryPayload),
-                    actions=actions)
-            ]
-            return Message(
-                text="Time entry will be removed...",
-                response_type="ephemeral",
-                mrkdwn=True,
-                attachments=attachments
-            ).dump()
+            return DeleteTimeCommandHandler.create_time_entry_selected_message(time_entry).dump()
+
         elif action_name == 'remove':
             # confirmation
             self.user_service.delete_time_entry(user.user_id, int(action.value))
-
-            return Message(
-                text="Time entry removed! :wink:",
-                response_type="ephemeral",
-            ).dump()
+            return Message(text="Time entry removed! :wink:", response_type="ephemeral").dump()
 
         elif action_name == 'cancel':
             # cancellation
-            return Message(
-                text="Canceled :wink:",
-                response_type="ephemeral",
-            ).dump()
+            return Message(text="Canceled :wink:", response_type="ephemeral").dump()
 
         else:
             logging.error("Unsupported action name: {0}".format(action_name))
@@ -123,10 +76,17 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
     def select_project(self, command_body, argument, action):
 
         user = self.user_service.get_user_by_slack_id(command_body['user_id'])
-
         project_options_list: List[TextSelectOption] = self.get_projects_option_list_as_text(user.user_id)
         user_default_project_id = self.get_default_project_id(project_options_list[0].value, user)
 
+        return DeleteTimeCommandHandler.create_select_project_message(user_default_project_id, project_options_list).dump()
+
+    def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
+        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
+        return [TextSelectOption(p.name, p.project_id) for p in projects]
+
+    @staticmethod
+    def create_select_project_message(user_default_project_id, project_options_list):
         actions = [
             Action(
                 name="projects_list",
@@ -150,8 +110,54 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
             text="I'm going to remove time entry :wastebasket:...",
             response_type="ephemeral",
             attachments=attachments
-        ).dump()
+        )
 
-    def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
-        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
-        return [TextSelectOption(p.name, p.project_id) for p in projects]
+    @staticmethod
+    def create_time_entry_selected_message(time_entry):
+        actions = [
+            Action(name="remove", text="Remove", style="danger", type=ActionType.BUTTON.value,
+                   value=str(time_entry.time_entry_id)),
+            Action(name="cancel", text="Cancel", type=ActionType.BUTTON.value, value="remove")
+        ]
+        attachments = [
+            Attachment(
+                text="Click 'Remove' to confirm:",
+                color="#3AA3E3", attachment_type="default",
+                callback_id=string_helper.get_full_class_name(DeleteTimeEntryPayload),
+                actions=actions)
+        ]
+        return Message(
+            text="Time entry will be removed...",
+            response_type="ephemeral",
+            mrkdwn=True,
+            attachments=attachments
+        )
+
+    @staticmethod
+    def create_project_selected_message(last_time_entries, selected_project) -> Message:
+
+        actions = [
+            Action(
+                name="time_entries_list",
+                text="Select time entry",
+                type=ActionType.SELECT.value,
+                options=[TextSelectOption(text=string_helper.make_option_time_string(te), value=te.time_entry_id)
+                         for te in last_time_entries]
+            ),
+        ]
+        attachments = [
+            Attachment(
+                text="Select time entry to remove",
+                fallback="Select time entry",
+                color="#3AA3E3",
+                attachment_type="default",
+                callback_id=string_helper.get_full_class_name(DeleteTimeEntryPayload),
+                actions=actions
+            )
+        ]
+        return Message(
+            text="There are the last time entries for *" + selected_project.name + "*:",
+            response_type="ephemeral",
+            mrkdwn=True,
+            attachments=attachments
+        )
