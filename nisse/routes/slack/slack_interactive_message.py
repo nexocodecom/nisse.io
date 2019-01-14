@@ -11,7 +11,7 @@ from marshmallow import ValidationError, UnmarshalResult
 
 from nisse.models.slack.errors import Error, ErrorSchema
 from nisse.models.slack.payload import Payload, GenericPayloadSchema
-from nisse.routes.slack.command_handlers import SlackCommandHandler
+from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 
 
 class SlackDialogSubmission(Resource):
