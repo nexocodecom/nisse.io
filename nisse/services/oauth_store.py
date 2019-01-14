@@ -1,17 +1,17 @@
-from google.oauth2.credentials import Credentials
-from flask_injector import inject
-from flask.config import Config
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from nisse.models import Base
-from nisse.services import TokenService
-from nisse.models.database import Token
 import json
 import os
 
-#Since its singletion in our application di config, it requires internal, manual creation of 
+from flask import Flask
+from flask.config import Config
+from flask_injector import inject
+from flask_sqlalchemy import SQLAlchemy
+from google.oauth2.credentials import Credentials
+
+from nisse.models.database import Token
+from nisse.services.token_service import TokenService
+
+
+#Since its singletion in our application di config, it requires internal, manual creation of
 #sql db connection on demand. Requesting SqlAlchemy session from DI would cause errors when writing/reading from database.
 class OAuthStore(object):
 

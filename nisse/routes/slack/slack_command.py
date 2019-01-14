@@ -7,34 +7,36 @@ from flask_restful import Resource
 
 from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
+from nisse.routes.slack.command_handlers.delete_time_command_handler import DeleteTimeCommandHandler
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
 from nisse.routes.slack.command_handlers.reminder_command_handler import ReminderCommandHandler
+from nisse.routes.slack.command_handlers.report_command_handler import ReportCommandHandler
 from nisse.routes.slack.command_handlers.show_help_command_handler import ShowHelpCommandHandler
 from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
 from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
 from nisse.services.exception import DataException, SlackUserException
-from nisse.services.slack.slack_command_service import SlackCommandService
 
 
 class SlackCommand(Resource):
 
     @inject
-    def __init__(self, app: Flask, slack_command_service: SlackCommandService,
+    def __init__(self, app: Flask,
                  vacation_command_handler: VacationCommandHandler,
                  submit_time_command_handler: SubmitTimeCommandHandler,
                  list_command_handler: ListCommandHandler,
                  set_reminder_handler: ReminderCommandHandler,
-                 show_help_handler: ShowHelpCommandHandler):
+                 show_help_handler: ShowHelpCommandHandler,
+                 report_command_handler: ReportCommandHandler,
+                 delete_time_command_handler: DeleteTimeCommandHandler):
         self.app = app
-        self.slack_command_service = slack_command_service
         self.set_reminder_handler = set_reminder_handler
         self.error_schema = ErrorSchema()
         self.dispatcher = {
             None: submit_time_command_handler.show_dialog,
             "": submit_time_command_handler.show_dialog,
             'list': list_command_handler.list_command_message,
-            'report': self.slack_command_service.report_pre_dialog,
-            'delete': self.slack_command_service.delete_command_message,
+            'report': report_command_handler.report_pre_dialog,
+            'delete': delete_time_command_handler.select_project,
             'vacation': vacation_command_handler.show_dialog,
             'reminder': self.reminder,
             'help': show_help_handler.create_help_command_message

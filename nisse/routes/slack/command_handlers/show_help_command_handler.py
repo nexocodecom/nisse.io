@@ -4,7 +4,9 @@ from flask.config import Config
 from flask_injector import inject
 from slackclient import SlackClient
 
+from nisse.models.slack.dialog import Dialog
 from nisse.models.slack.message import Attachment, Message
+from nisse.models.slack.payload import Payload
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 from nisse.services.project_service import ProjectService
 from nisse.services.reminder_service import ReminderService
@@ -18,7 +20,7 @@ class ShowHelpCommandHandler(SlackCommandHandler):
                  reminder_service: ReminderService):
         super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
 
-    def create_help_command_message(self, command_body, arguments, action) -> Message:
+    def create_help_command_message(self, command_body, arguments, action):
         command_name = command_body["command"]
 
         attachments = [
@@ -65,3 +67,9 @@ class ShowHelpCommandHandler(SlackCommandHandler):
             response_type="default",
             attachments=attachments
         ).dump()
+
+    def create_dialog(self, command_body, argument, action) -> Dialog:
+        raise NotImplementedError()
+
+    def handle(self, payload: Payload):
+        raise NotImplementedError()

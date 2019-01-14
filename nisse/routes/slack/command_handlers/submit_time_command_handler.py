@@ -1,23 +1,24 @@
 import logging
-from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
-from flask_injector import inject
+from datetime import date, datetime
+from decimal import Decimal
+from typing import List
+
 from flask.config import Config
+from flask_injector import inject
 from slackclient import SlackClient
-from nisse.services.user_service import UserService
-from nisse.services.project_service import ProjectService
-from nisse.services.reminder_service import ReminderService
-from nisse.models.slack.payload import TimeReportingFormPayload
-from nisse.models.slack.dialog import Element, Dialog
+
 from nisse.models.DTO import TimeRecordDto
 from nisse.models.slack.common import LabelSelectOption
-from datetime import date, datetime
-from typing import List
+from nisse.models.slack.dialog import Element, Dialog
 from nisse.models.slack.message import Attachment
+from nisse.models.slack.payload import TimeReportingFormPayload
+from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
+from nisse.services.project_service import ProjectService
+from nisse.services.reminder_service import ReminderService
+from nisse.services.user_service import UserService
+from nisse.utils import string_helper
 from nisse.utils.date_helper import get_float_duration
 from nisse.utils.validation_helper import list_find
-from decimal import Decimal
-from nisse.utils import string_helper
-
 
 DAILY_HOUR_LIMIT = 20
 
@@ -44,7 +45,6 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
         self.save_submitted_time_task(time_record)
 
     def create_dialog(self, command_body, argument, action) -> Dialog:
-        trigger_id = command_body['trigger_id']
         slack_user_id = command_body['user_id']
         report_date = datetime.now().date().strftime("%Y-%m-%d")
 
@@ -77,14 +77,6 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
         # todo cache it globally e.g. Flask-Cache
         projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
         return [LabelSelectOption(p.name, p.project_id) for p in projects]
-
-    def get_default_project_id(self, first_id: str, user) -> str:
-        if user is not None:
-            user_last_time_entry = self.user_service.get_user_last_time_entry(user.user_id)
-            if user_last_time_entry is not None:
-                return user_last_time_entry.project.project_id
-
-        return first_id
 
     def save_submitted_time_task(self, time_record: TimeRecordDto):
 

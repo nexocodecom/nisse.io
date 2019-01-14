@@ -1,16 +1,16 @@
+import logging
 from abc import ABC
+from datetime import datetime
 
+from flask.config import Config
+from slackclient import SlackClient
 
-from nisse.services.user_service import UserService
+from nisse.models.slack.dialog import Dialog
+from nisse.models.slack.payload import Payload
+from nisse.services.exception import SlackUserException
 from nisse.services.project_service import Project, ProjectService
 from nisse.services.reminder_service import ReminderService
-from slackclient import SlackClient
-import logging
-from nisse.models.slack.payload import Payload
-from nisse.services.exception import DataException, SlackUserException
-from nisse.models.slack.dialog import Dialog
-from datetime import datetime
-from flask.config import Config
+from nisse.services.user_service import UserService
 
 USER_ROLE_USER = 'user'
 USER_ROLE_ADMIN = 'admin'
@@ -80,7 +80,6 @@ class SlackCommandHandler(ABC):
         if not resp["ok"]:
             self.logger.error("Can't open dialog submit time: " + resp.get("error"))
 
-
     def current_date(self) -> datetime:
         return datetime.now()
 
@@ -97,6 +96,14 @@ class SlackCommandHandler(ABC):
                 text=message,
                 as_user=True
             )
+
+    def get_default_project_id(self, first_id: str, user) -> str:
+        if user is not None:
+            user_last_time_entry = self.user_service.get_user_last_time_entry(user.user_id)
+            if user_last_time_entry is not None:
+                return user_last_time_entry.project.project_id
+
+        return first_id
 
     def _extract_slack_user_id(self, user):
         if user is not None and user.startswith("<") and user.endswith(">") and user[1] == "@":
