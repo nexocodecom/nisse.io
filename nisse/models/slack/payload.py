@@ -139,24 +139,11 @@ class ListCommandPayload(Payload):
         return ListCommandHandler
 
 
-# class DeleteCommandPayload(Payload):
-#
-#     def handle(self, slack_command_service):
-#         return slack_command_service.delete_command_project_selected(self)
-
-
 class DeleteTimeEntryPayload(Payload):
 
-    # def handle(self, slack_command_service):
-    #     return slack_command_service.delete_command_time_entry_selected(self)
     def handler_type(self) -> type:
         from nisse.routes.slack.command_handlers.delete_time_command_handler import DeleteTimeCommandHandler
         return DeleteTimeCommandHandler
-
-# class DeleteConfirmPayload(Payload):
-#
-#     def handle(self, slack_command_service):
-#         return slack_command_service.delete_command_time_entry_confirm_remove(self)
 
 
 class RemindTimeReportBtnPayload(Payload):
@@ -164,6 +151,7 @@ class RemindTimeReportBtnPayload(Payload):
     def handler_type(self) -> type:
         from nisse.routes.slack.command_handlers.submit_time_button_handler import SubmitTimeButtonHandler
         return SubmitTimeButtonHandler
+
 
 class UserSchema(Schema):
     id = fields.String()
@@ -291,13 +279,6 @@ class ListCommandPayloadSchema(PayloadSchema):
         return ListCommandPayload(**data)
 
 
-# class DeleteCommandPayloadSchema(PayloadSchema):
-#
-#     @post_load
-#     def make_obj(self, data):
-#         return DeleteCommandPayload(**data)
-
-
 class DeleteTimeEntryPayloadSchema(PayloadSchema):
 
     @post_load
@@ -305,14 +286,7 @@ class DeleteTimeEntryPayloadSchema(PayloadSchema):
         return DeleteTimeEntryPayload(**data)
 
 
-# class DeleteConfirmPayloadSchema(PayloadSchema):
-#
-#     @post_load
-#     def make_obj(self, data):
-#         return DeleteConfirmPayload(**data)
-
-
-class RemindTimeReportBtnPayloadSchema(PayloadSchema):    
+class RemindTimeReportBtnPayloadSchema(PayloadSchema):
     @post_load
     def make_obj(self, data):
         return RemindTimeReportBtnPayload(**data)
@@ -342,9 +316,7 @@ class GenericPayloadSchema(OneOfSchema):
         get_full_class_name(TimeReportingFormPayload): TimeReportingFormPayloadSchema,
         get_full_class_name(ReportGenerateFormPayload): ReportGenerateFormPayloadSchema,
         get_full_class_name(ListCommandPayload): ListCommandPayloadSchema,
-        # get_full_class_name(DeleteCommandPayload): DeleteCommandPayloadSchema,
         get_full_class_name(DeleteTimeEntryPayload): DeleteTimeEntryPayloadSchema,
-        # get_full_class_name(DeleteConfirmPayload): DeleteConfirmPayloadSchema,
         get_full_class_name(RemindTimeReportBtnPayload): RemindTimeReportBtnPayloadSchema,
         get_full_class_name(RequestFreeDaysPayload): RequestFreeDaysPayloadSchema
     }
