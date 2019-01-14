@@ -97,6 +97,14 @@ class SlackCommandHandler(ABC):
                 as_user=True
             )
 
+    def get_default_project_id(self, first_id: str, user) -> str:
+        if user is not None:
+            user_last_time_entry = self.user_service.get_user_last_time_entry(user.user_id)
+            if user_last_time_entry is not None:
+                return user_last_time_entry.project.project_id
+
+        return first_id
+
     def _extract_slack_user_id(self, user):
         if user is not None and user.startswith("<") and user.endswith(">") and user[1] == "@":
             return user[2:-1].split('|')[0]

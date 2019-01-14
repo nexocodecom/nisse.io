@@ -78,14 +78,6 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
         projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
         return [LabelSelectOption(p.name, p.project_id) for p in projects]
 
-    def get_default_project_id(self, first_id: str, user) -> str:
-        if user is not None:
-            user_last_time_entry = self.user_service.get_user_last_time_entry(user.user_id)
-            if user_last_time_entry is not None:
-                return user_last_time_entry.project.project_id
-
-        return first_id
-
     def save_submitted_time_task(self, time_record: TimeRecordDto):
 
         user = self.get_user_by_slack_user_id(time_record.user_id)

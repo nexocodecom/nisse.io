@@ -121,20 +121,15 @@ class TimeReportingFormPayload(Payload):
 class ReportGenerateFormPayload(Payload):
 
     def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
-                 submission: ReportGenerateForm, actions=None, trigger_id=None,
+                 submission: ReportGenerateForm=None, actions=None, trigger_id=None,
                  messages_ts=None):
         super().__init__(type, token, action_ts, team, user, channel,
                          response_url, actions, trigger_id, messages_ts)
         self.submission = submission
 
-    def handle(self, slack_command_service):
-        return slack_command_service.report_generate_command(self)
-
-
-class ReportGenerateDialogPayload(Payload):
-
-    def handle(self, slack_command_service):
-        return slack_command_service.report_dialog(self)
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.report_command_handler import ReportCommandHandler
+        return ReportCommandHandler
 
 
 class ListCommandPayload(Payload):
@@ -287,13 +282,6 @@ class ReportGenerateFormPayloadSchema(PayloadSchema):
         return ReportGenerateFormPayload(**data)
 
 
-class ReportGenerateDialogPayloadSchema(PayloadSchema):
-
-    @post_load
-    def make_obj(self, data):
-        return ReportGenerateDialogPayload(**data)
-
-
 class ListCommandPayloadSchema(PayloadSchema):
 
     @post_load
@@ -337,6 +325,7 @@ class RequestFreeDaysFormSchema(PayloadSchema):
     def make_obj(self, data):
         return RequestFreeDaysForm(**data)
 
+
 class RequestFreeDaysPayloadSchema(PayloadSchema):    
     submission = fields.Nested(RequestFreeDaysFormSchema)
 
@@ -350,7 +339,6 @@ class GenericPayloadSchema(OneOfSchema):
     type_schemas = {
         get_full_class_name(TimeReportingFormPayload): TimeReportingFormPayloadSchema,
         get_full_class_name(ReportGenerateFormPayload): ReportGenerateFormPayloadSchema,
-        get_full_class_name(ReportGenerateDialogPayload): ReportGenerateDialogPayloadSchema,
         get_full_class_name(ListCommandPayload): ListCommandPayloadSchema,
         get_full_class_name(DeleteCommandPayload): DeleteCommandPayloadSchema,
         get_full_class_name(DeleteTimeEntryPayload): DeleteTimeEntryPayloadSchema,

@@ -1,47 +1,8 @@
 from nisse.models import TimeEntry
 from nisse.models.slack.common import ActionType
-from nisse.models.slack.dialog import Element, Dialog
 from nisse.models.slack.message import Attachment, Message, Action, TextSelectOption
-from nisse.models.slack.payload import ReportGenerateFormPayload, ReportGenerateDialogPayload, DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
+from nisse.models.slack.payload import DeleteCommandPayload, DeleteTimeEntryPayload, DeleteConfirmPayload
 from nisse.utils import string_helper
-from nisse.utils.date_helper import TimeRanges
-
-
-def create_select_period_for_reporting_model(command_body, inner_user_id, message_text):
-    actions = [
-        Action(
-            name=inner_user_id if inner_user_id is not None else command_body['user_id'],
-            text="Select time range...",
-            type=ActionType.SELECT.value,
-            options=[TextSelectOption(text=tr.value, value=tr.value) for tr in TimeRanges]
-        )
-    ]
-    attachments = [
-        Attachment(
-            text="Generate report for",
-            fallback="Select time range to report",
-            color="#3AA3E3",
-            attachment_type="default",
-            callback_id=string_helper.get_full_class_name(ReportGenerateDialogPayload),
-            actions=actions
-        )
-    ]
-
-    return Message(
-        text=message_text,
-        response_type="ephemeral",
-        mrkdwn=True,
-        attachments=attachments
-    )
-
-def create_generate_report_dialog_model(previous_week, project_options_list, today):
-    elements: Element = [
-        Element(label="Date from", type="text", name='day_from', placeholder="Specify date", value=previous_week),
-        Element(label="Date to", type="text", name='day_to', placeholder="Specify date", value=today),
-        Element(label="Project", type="select", name='project', optional='true', placeholder="Select a project", options=project_options_list)
-    ]
-
-    return Dialog(title="Generate report", submit_label="Generate", callback_id=string_helper.get_full_class_name(ReportGenerateFormPayload), elements=elements)
 
 
 def create_select_project_model(project_options_list, user_default_project_id):

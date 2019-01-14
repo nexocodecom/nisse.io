@@ -9,6 +9,7 @@ from nisse.models.slack.errors import ErrorSchema, Error
 from nisse.models.slack.message import Message
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
 from nisse.routes.slack.command_handlers.reminder_command_handler import ReminderCommandHandler
+from nisse.routes.slack.command_handlers.report_command_handler import ReportCommandHandler
 from nisse.routes.slack.command_handlers.show_help_command_handler import ShowHelpCommandHandler
 from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
 from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
@@ -24,7 +25,8 @@ class SlackCommand(Resource):
                  submit_time_command_handler: SubmitTimeCommandHandler,
                  list_command_handler: ListCommandHandler,
                  set_reminder_handler: ReminderCommandHandler,
-                 show_help_handler: ShowHelpCommandHandler):
+                 show_help_handler: ShowHelpCommandHandler,
+                 report_command_handler: ReportCommandHandler):
         self.app = app
         self.slack_command_service = slack_command_service
         self.set_reminder_handler = set_reminder_handler
@@ -33,7 +35,7 @@ class SlackCommand(Resource):
             None: submit_time_command_handler.show_dialog,
             "": submit_time_command_handler.show_dialog,
             'list': list_command_handler.list_command_message,
-            'report': self.slack_command_service.report_pre_dialog,
+            'report': report_command_handler.report_pre_dialog,
             'delete': self.slack_command_service.delete_command_message,
             'vacation': vacation_command_handler.show_dialog,
             'reminder': self.reminder,
