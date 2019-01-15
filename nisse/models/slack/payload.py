@@ -62,12 +62,12 @@ class Action(object):
         self.value = value
         self.selected_options = selected_options
 
+
 class RequestFreeDaysForm(object):
 
-    def __init__(self, start_date, end_date, reason):
+    def __init__(self, start_date, end_date):
         self.start_date = start_date
         self.end_date = end_date
-        self.reason = reason
 
 
 class Payload(object):
@@ -94,7 +94,7 @@ class Payload(object):
 
 class RequestFreeDaysPayload(Payload):
     def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
-                 submission: RequestFreeDaysForm, actions=None, trigger_id=None, messages_ts=None):
+                 submission: RequestFreeDaysForm=None, actions=None, trigger_id=None, messages_ts=None):
         super().__init__(type, token, action_ts, team, user, channel,
                          response_url, actions, trigger_id, messages_ts)
         self.submission = submission
@@ -295,7 +295,7 @@ class RemindTimeReportBtnPayloadSchema(PayloadSchema):
 class RequestFreeDaysFormSchema(PayloadSchema):    
     start_date = fields.String(validate=check_date)
     end_date = fields.String(validate=check_date)
-    reason = fields.String(allow_none=True)
+    event_id = fields.String(allow_none=True)
 
     @post_load
     def make_obj(self, data):

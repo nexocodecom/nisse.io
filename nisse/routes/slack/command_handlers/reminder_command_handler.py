@@ -59,3 +59,9 @@ class ReminderCommandHandler(SlackCommandHandler):
         else:
             raise DataException(field="user",
                                 message="incorrect format. Examples: /reminder set 15:15 /reminder set mon:15:15;tue:13:14;sat:18:10 ")
+
+    def dispatch_reminder(self, command_body, arguments, action):
+        if not arguments or arguments[0] == "show":
+            return self.reminder_show(command_body, arguments, action)
+        if arguments[0] == "set":
+            return self.reminder_set(command_body, arguments, action)

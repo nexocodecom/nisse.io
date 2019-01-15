@@ -1,12 +1,11 @@
-from datetime import date, datetime
-import pytz
-import httplib2
+from datetime import date, datetime, timedelta
 
+import pytz
 from flask.config import Config
-from googleapiclient.discovery import build
 from flask_injector import inject
+from googleapiclient.discovery import build
+
 from nisse.services.oauth_store import OAuthStore
-from nisse.utils.date_helper import parse_formatted_date
 
 
 class GoogleCalendarService(object):
@@ -32,7 +31,7 @@ class GoogleCalendarService(object):
             .execute()
         return free_days_result.get('items', [])
 
-    def report_free_day(self, slack_user_name:str, user_email: str, from_date: date, to_date: date, reason:str):                
+    def report_free_day(self, slack_user_name:str, user_email: str, from_date: date, to_date: date):
         body = {
             'summary': self.calendar_title_format.format(slack_user_name),
             'start': {
@@ -40,16 +39,18 @@ class GoogleCalendarService(object):
                 "timeZone": self.time_zone
             },
             'end': {
-                "date": self._format_google_date(to_date),
+                "date": self._format_google_date(to_date + timedelta(days=1)),
                 "timeZone": self.time_zone
             },
             'creator': {
                 "displayName": self.calendar_title_format.format(slack_user_name),
                 "email": user_email
-            },
-            'description': reason
+            }
         }
-        self.service.events().insert(calendarId=self.google_vacation_calendar_id, body=body).execute()
+        return self.service.events().insert(calendarId=self.google_vacation_calendar_id, body=body).execute()
+
+    def delete_free_day(self, event_id: str):
+        return self.service.events().delete(calendarId=self.google_vacation_calendar_id, eventId=event_id).execute()
 
     def _format_google_date(self, date: date):
         return date.strftime('%Y-%m-%d')

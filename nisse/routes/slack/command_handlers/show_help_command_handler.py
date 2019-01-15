@@ -55,6 +55,11 @@ class ShowHelpCommandHandler(SlackCommandHandler):
                 mrkdwn_in=['text']
             ),
             Attachment(
+                text='*{0} vacation delete*: Remove free time entry'.format(command_name),
+                attachment_type="default",
+                mrkdwn_in=['text']
+            ),
+            Attachment(
                 text="*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(command_name),
                 attachment_type="default",
                 mrkdwn_in=["text"]

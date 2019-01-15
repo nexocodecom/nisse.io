@@ -58,7 +58,7 @@ def is_weekend(date):
 
 
 def parse_formatted_date(date):
-    return parse_formatted_date(date).date()
+    return parse_formatted_datetime(date).date()
 
 
 def parse_formatted_datetime(date):

@@ -1,5 +1,5 @@
+from sqlalchemy import Column, Integer, String, DECIMAL, ForeignKey, Date, Time
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DECIMAL, ForeignKey,DATETIME, Date, Time
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
@@ -89,9 +89,9 @@ class Token(Base):
 class Vacation(Base):
     __tablename__ = "vacations"
     vacation_id = Column(Integer, primary_key=True)
-    start_date = Column(DATETIME, nullable=False)
-    end_date = Column(DATETIME, nullable=False)
-    reason = Column(String(255), nullable=True)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    event_id = Column(String(255), nullable=True)
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     user = relationship('User', back_populates='vacations')
     
