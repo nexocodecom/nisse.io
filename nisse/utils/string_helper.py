@@ -1,7 +1,9 @@
-from nisse.models import TimeEntry
 from datetime import datetime as dt
 from datetime import timedelta
+
+from nisse.models import TimeEntry
 from nisse.models import User
+from nisse.models.database import Vacation
 
 
 def get_full_class_name(obj):
@@ -18,6 +20,11 @@ def make_option_time_string(time_entry: TimeEntry):
     return time_entry.report_date.strftime("%Y-%m-%d") + \
            " " + str(round(time_entry.duration, 2)) + "h " + \
            (time_entry.comment[:45] + "..." if len(time_entry.comment) > 15 else time_entry.comment)
+
+
+def make_option_vacations_string(vacation: Vacation):
+    return "{0} - {1}".format(vacation.start_date.strftime("%Y-%m-%d"),
+                                                 vacation.end_date.strftime("%Y-%m-%d"))
 
 
 def format_slack_date(date_to_format):

@@ -1,14 +1,16 @@
-from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
-from nisse.models.slack.payload import RequestFreeDaysPayload, SlackUser, RequestFreeDaysForm
-from nisse.services.reminder_service import ReminderService
-from nisse.models.database import Vacation
-from marshmallow import ValidationError
+import logging
+from datetime import datetime
 from unittest import TestCase
 from unittest.mock import MagicMock
-from datetime import datetime
-import logging
+
 import mock
 from flask.config import Config
+from marshmallow import ValidationError
+
+from nisse.models.database import Vacation
+from nisse.models.slack.payload import RequestFreeDaysPayload, SlackUser, RequestFreeDaysForm
+from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+from nisse.services.reminder_service import ReminderService
 
 
 class TestVacationCommanHandler(TestCase):
@@ -43,7 +45,7 @@ class TestVacationCommanHandler(TestCase):
     def test_new_daysoff_should_not_start_within_exisitng_daysoff(self):
         #Arrange
         request_form = RequestFreeDaysForm(
-            start_date='2018-12-15', end_date='2018-12-19', reason='')
+            start_date='2018-12-15', end_date='2018-12-19')
         payload = RequestFreeDaysPayload(
             '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
         self.handler.current_date = MagicMock(
@@ -61,7 +63,7 @@ class TestVacationCommanHandler(TestCase):
     def test_new_daysoff_should_not_end_within_exisitng_daysoff(self):
         #Arrange
         request_form = RequestFreeDaysForm(
-            start_date='2018-12-11', end_date='2018-12-15', reason='')
+            start_date='2018-12-11', end_date='2018-12-15')
         payload = RequestFreeDaysPayload(
             '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
         self.handler.current_date = MagicMock(
@@ -79,7 +81,7 @@ class TestVacationCommanHandler(TestCase):
     def test_new_daysoff_should_validate_current_date(self):
         #Arrange
         request_form = RequestFreeDaysForm(
-            start_date='2018-12-10', end_date='2018-12-15', reason='')
+            start_date='2018-12-10', end_date='2018-12-15')
         payload = RequestFreeDaysPayload(
             '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
         self.handler.current_date = MagicMock(
@@ -97,7 +99,7 @@ class TestVacationCommanHandler(TestCase):
     def test_new_daysoff_should_check_if_start_date_is_not_lower_than_end_date(self):
         #Arrange
         request_form = RequestFreeDaysForm(
-            start_date='2018-12-10', end_date='2018-12-9', reason='')
+            start_date='2018-12-10', end_date='2018-12-9')
         payload = RequestFreeDaysPayload(
             '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
         self.handler.current_date = MagicMock(
@@ -115,7 +117,7 @@ class TestVacationCommanHandler(TestCase):
     def test_should_succeed(self):
         #Arrange
         request_form = RequestFreeDaysForm(
-            start_date='2018-12-19', end_date='2018-12-24', reason='')
+            start_date='2018-12-19', end_date='2018-12-24')
         payload = RequestFreeDaysPayload(
             '', '', '', None, SlackUser('1', 'name'), None, '',  request_form)
         self.handler.current_date = MagicMock(

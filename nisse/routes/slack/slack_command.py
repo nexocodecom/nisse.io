@@ -37,8 +37,8 @@ class SlackCommand(Resource):
             'list': list_command_handler.list_command_message,
             'report': report_command_handler.report_pre_dialog,
             'delete': delete_time_command_handler.select_project,
-            'vacation': vacation_command_handler.show_dialog,
-            'reminder': self.reminder,
+            'vacation': vacation_command_handler.dispatch_vacation,
+            'reminder': set_reminder_handler.dispatch_reminder,
             'help': show_help_handler.create_help_command_message
         }
 
@@ -67,12 +67,6 @@ class SlackCommand(Resource):
             return error_result, 200
         except SlackUserException as e:
             return Message(text=e.message, response_type="ephemeral").dump(), 200
-
-    def reminder(self, command_body, arguments, action):
-        if not arguments or arguments[0] == "show":
-            return self.set_reminder_handler.reminder_show(command_body, arguments, action)
-        if arguments[0] == "set":
-            return self.set_reminder_handler.reminder_set(command_body, arguments, action)
 
     @staticmethod
     def handle_other(commands_body, arguments, action):
