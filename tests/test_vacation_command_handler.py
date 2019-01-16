@@ -28,7 +28,7 @@ class TestVacationCommanHandler(TestCase):
         self.mock_calendar_service = mock_calendar_service
 
         self.mock_vacation_service.get_user_vacations_since.return_value = [
-            Vacation(start_date=datetime(2018, 12, 12), end_date=datetime(2018, 12, 18))]
+            Vacation(start_date=datetime(2018, 12, 12).date(), end_date=datetime(2018, 12, 18).date())]
 
         self.mock_project_service.get_project_by_id.return_value = None
         self.mock_user_service.get_user_by_id.return_value = None
