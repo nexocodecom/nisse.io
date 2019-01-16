@@ -46,7 +46,7 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
 
     def create_dialog(self, command_body, argument, action) -> Dialog:
         slack_user_id = command_body['user_id']
-        report_date = datetime.now().date().strftime("%Y-%m-%d")
+        report_date = action.value
 
         slack_user_details = self.user_service.get_user_by_slack_id(slack_user_id)
 
