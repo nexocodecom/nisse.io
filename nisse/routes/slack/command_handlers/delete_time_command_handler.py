@@ -81,10 +81,6 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
 
         return DeleteTimeCommandHandler.create_select_project_message(user_default_project_id, project_options_list).dump()
 
-    def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
-        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
-        return [TextSelectOption(p.name, p.project_id) for p in projects]
-
     @staticmethod
     def create_select_project_message(user_default_project_id, project_options_list):
         actions = [

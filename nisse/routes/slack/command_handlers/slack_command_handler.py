@@ -1,11 +1,13 @@
 import logging
 from abc import ABC
 from datetime import datetime
+from typing import List
 
 from flask.config import Config
 from slackclient import SlackClient
 
 from nisse.models.slack.dialog import Dialog
+from nisse.models.slack.message import TextSelectOption
 from nisse.models.slack.payload import Payload
 from nisse.services.exception import SlackUserException
 from nisse.services.project_service import Project, ProjectService
@@ -104,6 +106,10 @@ class SlackCommandHandler(ABC):
                 return user_last_time_entry.project.project_id
 
         return first_id
+
+    def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
+        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
+        return [TextSelectOption(p.name, p.project_id) for p in projects]
 
     def _extract_slack_user_id(self, user):
         if user is not None and user.startswith("<") and user.endswith(">") and user[1] == "@":
