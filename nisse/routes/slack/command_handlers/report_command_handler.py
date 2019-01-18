@@ -72,8 +72,7 @@ class ReportCommandHandler(SlackCommandHandler):
             path_for_report = os.path.join(current_app.instance_path, current_app.config["REPORT_PATH"],
                                            secure_filename(str(uuid.uuid4())) + ".xlsx")
             load_data = self.report_service.load_report_data(print_param)
-            self.sheet_generator.save_report(path_for_report, print_param.date_from, print_param.date_to, load_data,
-                                          selected_project)
+            self.sheet_generator.save_report(path_for_report, print_param.date_from, print_param.date_to, load_data)
 
             im_channel = self.slack_client.api_call("im.open", user=payload.user.id)
 
