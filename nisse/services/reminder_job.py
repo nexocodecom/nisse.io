@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from flask_bcrypt import Bcrypt
 from slackclient import SlackClient
 from sqlalchemy import create_engine
@@ -7,11 +5,8 @@ from sqlalchemy.orm import sessionmaker
 
 from nisse.models.slack.payload import RemindTimeReportBtnPayload
 from nisse.services import UserService
+from nisse.utils.date_helper import *
 from nisse.utils.string_helper import get_full_class_name
-
-from logging import Logger
-from flask.config import Config
-from flask_injector import inject
 
 
 def get_users_to_notify(logger, config):
@@ -33,10 +28,15 @@ def get_users_to_notify(logger, config):
         if session:
             session.close()
 
+
 def remind(logger, config):
     logger.info('Reminder job started: ' + str(datetime.utcnow().time()))
-    slack_client = SlackClient(config['SLACK_BOT_ACCESS_TOKEN'])
 
+    remind_date = datetime.now()
+    if is_holiday_poland(remind_date.date()):
+        return
+
+    slack_client = SlackClient(config['SLACK_BOT_ACCESS_TOKEN'])
     users = get_users_to_notify(logger, config)
 
     for user in users:
@@ -49,7 +49,6 @@ def remind(logger, config):
         if not im_channel["ok"]:
             logger.error("Can't open im channel for: " +
                          str(user.user_id) + '. ' + im_channel["error"])
-        remind_date = datetime.now()
 
         resp = slack_client.api_call(
             "chat.postMessage",

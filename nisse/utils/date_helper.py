@@ -56,10 +56,11 @@ def date_range(start_date, end_date):
 
 
 def is_weekend(day):
-    return day.weekday() >= 5 or is_holiday_ester(day) or is_holiday_poland(day)
+    return day.weekday() >= 5 or is_holiday_poland(day)
 
 
 def is_holiday_poland(day: date):
+    est = easter(day.year)
     return day in [
         parse_formatted_date('{0}-01-01'.format(day.year)),
         parse_formatted_date('{0}-01-06'.format(day.year)),
@@ -69,13 +70,7 @@ def is_holiday_poland(day: date):
         parse_formatted_date('{0}-11-01'.format(day.year)),
         parse_formatted_date('{0}-11-11'.format(day.year)),
         parse_formatted_date('{0}-12-25'.format(day.year)),
-        parse_formatted_date('{0}-12-26'.format(day.year))
-    ]
-
-
-def is_holiday_ester(day: date):
-    est = easter(day.year)
-    return day in [
+        parse_formatted_date('{0}-12-26'.format(day.year)),
         est + timedelta(days=1)
     ]
 
