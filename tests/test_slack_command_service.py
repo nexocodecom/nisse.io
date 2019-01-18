@@ -76,15 +76,17 @@ class SlackCommandServiceTests(unittest.TestCase):
 
         self.mock_slack_client.api_call.side_effect = slack_client_api_call_side_effect
         command_body = {
-            "trigger_id": "123abc",
-            "user_id": "user123"
+            'trigger_id': '123abc',
+            'user_id': 'user123'
         }
+        action = mock.MagicMock()
+        action.value.return_value = '2019-01-16'
 
         self.mock_project_service.get_projects.return_value = [Project(), Project()]
         self.mock_project_service.get_projects_by_user.return_value = [Project(), Project()]
 
         # act
-        self.handler.show_dialog(command_body, None, None)
+        self.handler.show_dialog(command_body, None, action)
 
         # assert
         self.assertEqual(self.mock_slack_client.api_call.call_count, 1)        
@@ -117,12 +119,14 @@ class SlackCommandServiceTests(unittest.TestCase):
             "trigger_id": "123abc",
             "user_id": "user123"
         }
+        action = mock.MagicMock()
+        action.value.return_value = '2019-01-16'
 
         self.mock_project_service.get_projects.return_value = [Project(), Project()]
         self.mock_project_service.get_projects_by_user.return_value = [Project(), Project()]
 
         # act
-        self.handler.show_dialog(command_body, None, None)
+        self.handler.show_dialog(command_body, None, action)
 
         # assert
         self.assertEqual(self.mock_slack_client.api_call.call_count, 1)        
