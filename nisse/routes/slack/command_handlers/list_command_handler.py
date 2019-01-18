@@ -1,17 +1,18 @@
-from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
-from nisse.services.user_service import UserService, User
-from nisse.services.project_service import ProjectService
-from nisse.services.reminder_service import ReminderService
-from slackclient import SlackClient
 from logging import Logger
-from flask_injector import inject
 
 from flask.config import Config
-from nisse.models.slack.payload import Payload, ListCommandPayload
-from nisse.models.slack.message import Action, Attachment, Message, TextSelectOption
+from flask_injector import inject
+from slackclient import SlackClient
+
 from nisse.models.slack.common import ActionType
+from nisse.models.slack.message import Action, Attachment, Message, TextSelectOption
+from nisse.models.slack.payload import ListCommandPayload
+from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
+from nisse.services.project_service import ProjectService
+from nisse.services.reminder_service import ReminderService
+from nisse.services.user_service import UserService, User
 from nisse.utils import string_helper
-from nisse.utils.date_helper import get_start_end_date, get_float_duration, TimeRanges
+from nisse.utils.date_helper import get_start_end_date, TimeRanges
 
 
 class ListCommandHandler(SlackCommandHandler):
@@ -51,7 +52,7 @@ class ListCommandHandler(SlackCommandHandler):
         arg_iter = iter(arguments)
         first_arg = next(arg_iter, None)
         second_arg = next(arg_iter, None)
-        inner_user_id = self._extract_slack_user_id(first_arg)
+        inner_user_id = self.extract_slack_user_id(first_arg)
         time_range = first_arg if self.time_ranges.__contains__(first_arg) else second_arg
 
         if len(arguments) == 1 and inner_user_id:  # one argument, inner_user_id

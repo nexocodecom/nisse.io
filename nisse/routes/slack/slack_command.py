@@ -62,7 +62,9 @@ class SlackCommand(Resource):
         try:
             callback = self.dispatcher.get(action, self.handle_other)
             result = callback(command_body, arguments, action)
-            return (result, 200) if result else (None, 204)
+            if not result:
+                result = self.handle_other(command_body, arguments, action)
+            return result, 200
 
         except DataException as e:
             error_result: Dict = self.error_schema.dump(
@@ -74,7 +76,7 @@ class SlackCommand(Resource):
     @staticmethod
     def handle_other(commands_body, arguments, action):
         return Message(
-            text="Oops, I don't understand *" + action + "* :thinking_face:",
+            text="Oops, I don't understand *" + action + "* command :thinking_face:",
             response_type="ephemeral",
             mrkdwn=True
         ).dump()

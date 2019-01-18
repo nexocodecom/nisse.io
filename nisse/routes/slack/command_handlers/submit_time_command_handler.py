@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import List
 
@@ -78,12 +78,6 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
     @staticmethod
     def get_duration_minutes() -> List[LabelSelectOption]:
         return [LabelSelectOption(n, n) for n in range(0, 60, 15)]
-
-    def get_projects_option_list_as_label(self, user_id=None) -> List[LabelSelectOption]:
-        # todo cache it globally e.g. Flask-Cache
-        projects = self.project_service.get_projects_by_user(
-            user_id) if user_id else self.project_service.get_projects()
-        return [LabelSelectOption(p.name, p.project_id) for p in projects]
 
     def save_submitted_time_task(self, time_record: TimeRecordDto):
 

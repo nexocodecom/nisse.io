@@ -294,32 +294,30 @@ class RequestFreeDaysPayload(Payload):
         return VacationCommandHandler
 
 
-class ProjectForm(object):
+class ProjectAddForm(object):
 
     class Schema(Payload.Schema):
         project_name = fields.String()
-        user = fields.String()
 
         @post_load
         def make_obj(self, data):
-            return ProjectForm(**data)
+            return ProjectAddForm(**data)
 
-    def __init__(self, project_name, user):
+    def __init__(self, project_name):
         self.project_name = project_name
-        self.user = user
 
 
-class ProjectPayload(Payload):
+class ProjectAddPayload(Payload):
 
     class Schema(Payload.Schema):
-        submission = fields.Nested(ProjectForm.Schema)
+        submission = fields.Nested(ProjectAddForm.Schema)
 
         @post_load
         def make_obj(self, data):
-            return ProjectPayload(**data)
+            return ProjectAddPayload(**data)
 
     def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
-                 submission: ProjectForm=None, actions=None, trigger_id=None, messages_ts=None):
+                 submission: ProjectAddForm=None, actions=None, trigger_id=None, messages_ts=None):
         super().__init__(type, token, action_ts, team, user, channel,
                          response_url, actions, trigger_id, messages_ts)
         self.submission = submission
@@ -338,7 +336,7 @@ class GenericPayloadSchema(OneOfSchema):
         get_full_class_name(DeleteTimeEntryPayload): DeleteTimeEntryPayload.Schema,
         get_full_class_name(RemindTimeReportBtnPayload): RemindTimeReportBtnPayload.Schema,
         get_full_class_name(RequestFreeDaysPayload): RequestFreeDaysPayload.Schema,
-        get_full_class_name(ProjectPayload): ProjectPayload.Schema
+        get_full_class_name(ProjectAddPayload): ProjectAddPayload.Schema
     }
 
     def get_obj_type(self, obj):
