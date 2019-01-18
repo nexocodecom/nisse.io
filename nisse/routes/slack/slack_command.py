@@ -62,9 +62,7 @@ class SlackCommand(Resource):
         try:
             callback = self.dispatcher.get(action, self.handle_other)
             result = callback(command_body, arguments, action)
-            if not result:
-                result = self.handle_other(command_body, arguments, action)
-            return result, 200
+            return (result, 200) if result else (None, 204)
 
         except DataException as e:
             error_result: Dict = self.error_schema.dump(

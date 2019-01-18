@@ -81,12 +81,6 @@ class ProjectCommandHandler(SlackCommandHandler):
 
     def create_dialog(self, command_body, argument, action):
 
-        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
-
-        if user.role.role != 'admin':
-            return Message(text="You have insufficient privileges... :neutral_face:",
-                response_type="ephemeral", mrkdwn=True).dump()
-
         elements: Element = [
             Element(label="Project name", type="text", name='project_name', placeholder="Specify project name")
         ]
@@ -157,9 +151,19 @@ class ProjectCommandHandler(SlackCommandHandler):
         )
 
     def dispatch_project_command(self, command_body, arguments, action):
+
+        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+
+        if user.role.role != 'admin':
+            return Message(text="You have insufficient privileges to use this command... :neutral_face:",
+                           response_type="ephemeral", mrkdwn=True).dump()
+
         if not arguments:
             return self.show_dialog(command_body, arguments, action)
         elif arguments[0] == "assign":
             return self.select_project(command_body['user_id'], arguments)
         elif arguments[0] == "unassign":
             return self.select_project(command_body['user_id'], arguments)
+        else:
+            return Message(text="Oops, I don't understand the command's parameters :thinking_face:",
+                          response_type="ephemeral", mrkdwn=True ).dump()

@@ -4,6 +4,7 @@ from flask.config import Config
 from flask_injector import inject
 from slackclient import SlackClient
 
+from nisse.models.database import User
 from nisse.models.slack.dialog import Dialog
 from nisse.models.slack.message import Attachment, Message
 from nisse.models.slack.payload import Payload
@@ -65,6 +66,25 @@ class ShowHelpCommandHandler(SlackCommandHandler):
                 mrkdwn_in=["text"]
             )
         ]
+
+        user: User = self.user_service.get_user_by_slack_id(command_body['user_id'])
+
+        if user.role.role == 'admin':
+            attachments.append(Attachment(
+                text="*{0} project*: Create new project".format(command_name),
+                attachment_type="default",
+                mrkdwn_in=["text"]
+            ))
+            attachments.append(Attachment(
+                text="*{0} project assign*: Assign user for project".format(command_name),
+                attachment_type="default",
+                mrkdwn_in=["text"]
+            ))
+            attachments.append(Attachment(
+                text="*{0} project unassign*: Unassign user from project".format(command_name),
+                attachment_type="default",
+                mrkdwn_in=["text"]
+            ))
 
         return Message(
             text="*Nisse* is used for reporting working time. Following commands are available:",
