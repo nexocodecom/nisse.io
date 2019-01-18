@@ -1,8 +1,10 @@
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, date
 from datetime import datetime as dt
 from datetime import timedelta
 from enum import Enum
+
+from dateutil.easter import easter
 
 
 class TimeRanges(Enum):
@@ -53,8 +55,29 @@ def date_range(start_date, end_date):
         yield start_date + timedelta(n)
 
 
-def is_weekend(date):
-    return date.weekday() >= 5
+def is_weekend(day):
+    return day.weekday() >= 5 or is_holiday_ester(day) or is_holiday_poland(day)
+
+
+def is_holiday_poland(day: date):
+    return day in [
+        parse_formatted_date('{0}-01-01'.format(day.year)),
+        parse_formatted_date('{0}-01-06'.format(day.year)),
+        parse_formatted_date('{0}-05-01'.format(day.year)),
+        parse_formatted_date('{0}-05-03'.format(day.year)),
+        parse_formatted_date('{0}-08-15'.format(day.year)),
+        parse_formatted_date('{0}-11-01'.format(day.year)),
+        parse_formatted_date('{0}-11-11'.format(day.year)),
+        parse_formatted_date('{0}-12-25'.format(day.year)),
+        parse_formatted_date('{0}-12-26'.format(day.year))
+    ]
+
+
+def is_holiday_ester(day: date):
+    est = easter(day.year)
+    return day in [
+        est + timedelta(days=1)
+    ]
 
 
 def parse_formatted_date(date):
