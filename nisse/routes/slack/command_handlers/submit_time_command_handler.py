@@ -125,7 +125,7 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
         attachments = [Attachment(
             title='Submitted ' + string_helper.format_duration_decimal(Decimal(duration_float)) + ' hour(s) for ' +
                   (
-                      'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name,
+                      'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name + " :clap:",
             text="_" + time_record.comment + "_",
             mrkdwn_in=["text", "footer"],
             footer=self.config['MESSAGE_SUBMIT_TIME_TIP']
