@@ -1,14 +1,15 @@
+import datetime
 import random
 import string
-import datetime
-
-from flask_injector import inject
-from sqlalchemy import and_
 from typing import List
 
-from nisse.models.database import User, TimeEntry, UserRole, Project, UserProject
 from flask_bcrypt import Bcrypt
+from flask_injector import inject
+from sqlalchemy import and_
+from sqlalchemy import exists
 from sqlalchemy.orm import joinedload, Session
+
+from nisse.models.database import User, TimeEntry, UserRole, Project, UserProject
 
 USER_ROLE_USER = 'user'
 USER_ROLE_ADMIN = 'admin'
@@ -79,6 +80,30 @@ class UserService(object):
 
     def get_users(self, ):
         return self.db.query(User).all()
+
+    def get_projects_by_user(self, user_id: int):
+        return self.db.session.query(Project) \
+            .join(UserProject.project) \
+            .filter(UserProject.user_id == user_id) \
+            .all()
+
+    def get_users_not_assigned_for_project(self, project_id: int):
+        return self.db.query(User)\
+            .filter(
+                ~exists().where(
+                    and_(
+                        UserProject.user_id == User.user_id,
+                        UserProject.project_id == project_id
+                    )
+                )
+            )\
+            .all()
+
+    def get_users_assigned_for_project(self, project_id: int):
+        return self.db.query(User) \
+            .join(UserProject.user) \
+            .filter(UserProject.project_id == project_id) \
+            .all()
 
     def get_user_last_time_entry(self, user_id: int):
         return self.db.query(TimeEntry) \

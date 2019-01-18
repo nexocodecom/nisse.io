@@ -1,11 +1,14 @@
 import logging
 from abc import ABC
 from datetime import datetime
+from typing import List
 
 from flask.config import Config
 from slackclient import SlackClient
 
+from nisse.models.slack.common import LabelSelectOption
 from nisse.models.slack.dialog import Dialog
+from nisse.models.slack.message import TextSelectOption
 from nisse.models.slack.payload import Payload
 from nisse.services.exception import SlackUserException
 from nisse.services.project_service import Project, ProjectService
@@ -90,12 +93,7 @@ class SlackCommandHandler(ABC):
             self.logger.error("Can't open im channel for: " + str(slack_user_id) + '. ' + im_channel["error"])
             return
 
-        self.slack_client.api_call(
-                "chat.postMessage",
-                channel=im_channel['channel']['id'],
-                text=message,
-                as_user=True
-            )
+        self.slack_client.api_call("chat.postMessage", channel=im_channel['channel']['id'], text=message, as_user=True)
 
     def get_default_project_id(self, first_id: str, user) -> str:
         if user is not None:
@@ -105,7 +103,15 @@ class SlackCommandHandler(ABC):
 
         return first_id
 
-    def _extract_slack_user_id(self, user):
+    def get_projects_option_list_as_text(self, user_id=None) -> List[TextSelectOption]:
+        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
+        return [TextSelectOption(p.name, p.project_id) for p in projects]
+
+    def get_projects_option_list_as_label(self, user_id=None) -> List[LabelSelectOption]:
+        projects = self.project_service.get_projects_by_user(user_id) if user_id else self.project_service.get_projects()
+        return [LabelSelectOption(p.name, p.project_id) for p in projects]
+
+    def extract_slack_user_id(self, user):
         if user is not None and user.startswith("<") and user.endswith(">") and user[1] == "@":
             return user[2:-1].split('|')[0]
         else:

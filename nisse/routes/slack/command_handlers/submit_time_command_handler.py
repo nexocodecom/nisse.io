@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import List
 
@@ -79,12 +79,6 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
     def get_duration_minutes() -> List[LabelSelectOption]:
         return [LabelSelectOption(n, n) for n in range(0, 60, 15)]
 
-    def get_projects_option_list_as_label(self, user_id=None) -> List[LabelSelectOption]:
-        # todo cache it globally e.g. Flask-Cache
-        projects = self.project_service.get_projects_by_user(
-            user_id) if user_id else self.project_service.get_projects()
-        return [LabelSelectOption(p.name, p.project_id) for p in projects]
-
     def save_submitted_time_task(self, time_record: TimeRecordDto):
 
         user = self.get_user_by_slack_user_id(time_record.user_id)
@@ -131,7 +125,7 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
         attachments = [Attachment(
             title='Submitted ' + string_helper.format_duration_decimal(Decimal(duration_float)) + ' hour(s) for ' +
                   (
-                      'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name,
+                      'Today' if time_record.day == date.today().isoformat() else time_record.day) + ' in ' + selected_project.name + " :clap:",
             text="_" + time_record.comment + "_",
             mrkdwn_in=["text", "footer"],
             footer=self.config['MESSAGE_SUBMIT_TIME_TIP']

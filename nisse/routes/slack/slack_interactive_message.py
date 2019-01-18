@@ -9,7 +9,7 @@ from flask_restful import Resource
 from injector import Injector
 from marshmallow import ValidationError, UnmarshalResult
 
-from nisse.models.slack.errors import Error, ErrorSchema
+from nisse.models.slack.errors import Error
 from nisse.models.slack.payload import Payload, GenericPayloadSchema
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 
@@ -33,7 +33,7 @@ class SlackDialogSubmission(Resource):
             for i, field in enumerate(submission):
                 errors.append(Error(field, submission[field]))
 
-            schema = ErrorSchema(many=True)
+            schema = Error.Schema(many=True)
             result = schema.dump(errors).data
             return jsonify({'errors': result})
 

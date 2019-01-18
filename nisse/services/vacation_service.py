@@ -30,6 +30,13 @@ class VacationService(object):
             .limit(10) \
             .all()
 
+    def get_vacations_by_dates(self, user_id, date_from, date_to):
+        return self.db.query(Vacation) \
+            .filter(Vacation.user_id == user_id) \
+            .filter(or_(Vacation.start_date.between(date_from, date_to),
+                        Vacation.end_date.between(date_from, date_to))) \
+            .all()
+
     def get_vacation_by_id(self, user_id: int, vacation_id: int) -> Vacation:
         return self.db.query(Vacation)\
             .filter(vacation_id == Vacation.vacation_id) \

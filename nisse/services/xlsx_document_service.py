@@ -1,45 +1,60 @@
+from datetime import datetime, timedelta, date
+from itertools import groupby
+from typing import List
+
+from flask_injector import inject
 from openpyxl import Workbook
 from openpyxl.cell import Cell
-from openpyxl.styles import Font, Color, Border, Side, Alignment, colors
-from itertools import groupby
+from openpyxl.styles import Font, Border, Side, Alignment, colors
+
+from nisse.services.user_service import UserService
+from nisse.services.vacation_service import VacationService
 from nisse.utils.date_helper import *
 from nisse.utils.string_helper import *
-from datetime import datetime, timedelta
 
 
 class XlsxDocumentService(object):
-    """
-    This class will save time entries data into xlsx file
-    """
+
+    @inject
+    def __init__(self, user_service: UserService, vacation_service: VacationService):
+        self.vacation_service = vacation_service
+        self.user_service = user_service
 
     font_red = Font(color=colors.RED)
+    font_orange = Font(color='00FF9900')
     font_red_bold = Font(color=colors.RED, bold=True)
     font_bold = Font(bold=True)
     top_border = Border(top=Side(style='thin'))
     alignment_right = Alignment(horizontal='right')
     alignment_top = Alignment(vertical='top')
 
-    def save_report(self, file_path, date_from, date_to, time_entries, project):
+    def save_report(self, file_path, date_from, date_to, time_entries):
         """
         Creates report and saves it into xlsx file
         :param file_path: file destination
         :param date_from: start date for report
         :param date_to: end date for report
         :param time_entries: collection time entries
-        :param project: project for which report is generated
+        :param vacation_data: list of vacations
         :return:
         """
 
         wb = Workbook()
 
         time_entries = sorted(time_entries, key=lambda te: get_user_name(te.user))
-        by_user = groupby(time_entries, key=lambda te: get_user_name(te.user))
+        by_user = groupby(time_entries, key=lambda te: te.user_id)
 
         first_sheet = True
-        for first_name, group in by_user:
+        for user_id, group in by_user:
+
+            user: User = self.user_service.get_user_by_id(user_id)
+            if not user:
+                continue
 
             group_sorted = list(group)
+            vacation_data = self.vacation_service.get_vacations_by_dates(user.user_id, date_from, date_to)
 
+            first_name = get_user_name(user)
             sheet = None
             if first_sheet:
                 sheet = wb.active
@@ -63,14 +78,14 @@ class XlsxDocumentService(object):
             total_basic = 0
             total_deficit = 0
             total_overtime = 0
-            for date in date_range(datetime.strptime(date_from, "%Y-%m-%d").date(),
+            for day in date_range(datetime.strptime(date_from, "%Y-%m-%d").date(),
                                    datetime.strptime(date_to, "%Y-%m-%d").date() + timedelta(days=1)):
 
-                tes = list(filter(lambda te: te.report_date == date, group_sorted))
+                tes = list(filter(lambda te: te.report_date == day, group_sorted))
                 time_reported = sum(te.duration for te in tes)
 
-                self.put_text(sheet['A' + str(i + 1)], format_date(date),
-                              font=(self.font_red if is_weekend(date) else None), alignment=self.alignment_top)
+                self.put_text(sheet['A' + str(i + 1)], format_date(day),
+                              font=self.get_date_color(day, vacation_data), alignment=self.alignment_top)
 
                 for te in tes:
                     i += 1
@@ -87,7 +102,9 @@ class XlsxDocumentService(object):
 
                 basic = 0
                 deficit = 0
-                if not is_weekend(date) and time_reported:
+                if not is_weekend(day) and not XlsxDocumentService.is_vacation_day(day, vacation_data):
+                    if not time_reported:
+                        time_reported = 0
                     basic = time_reported if time_reported <= 8 else 8
                     deficit = 8 - basic if time_reported <= 8 else 0
                 overtime = time_reported - basic
@@ -97,23 +114,44 @@ class XlsxDocumentService(object):
 
             total_overtime_deficit = total_overtime - total_deficit if (total_overtime - total_deficit) > 0 else 0
             total_basic_deficit = total_basic + total_deficit if total_overtime_deficit > 0 else total_basic + total_overtime
+            total_deficit = total_deficit - total_overtime if (total_deficit - total_overtime) > 0 else 0
 
             i += 1
-            self.put_time(sheet['B' + str(i)], str("=SUM(B" + str(i_start) + ":B" + str(i - 1) + ")"),
+            XlsxDocumentService.put_time(sheet['B' + str(i)], str("=SUM(B" + str(i_start) + ":B" + str(i - 1) + ")"),
                           font=self.font_bold)
-            self.put_text(sheet['A' + str(i + 2)], "Overtime:", font=self.font_bold, alignment=self.alignment_right)
-            self.put_time(sheet['B' + str(i + 2)], total_overtime_deficit, self.font_bold)
-            self.put_text(sheet['A' + str(i + 3)], "Basic hours:", font=self.font_bold, alignment=self.alignment_right)
-            self.put_time(sheet['B' + str(i + 3)], total_basic_deficit, self.font_bold)
+            XlsxDocumentService.put_text(sheet['A' + str(i + 2)], "Overtime:", font=self.font_bold, alignment=self.alignment_right)
+            XlsxDocumentService.put_time(sheet['B' + str(i + 2)], total_overtime_deficit, self.font_bold)
+            XlsxDocumentService.put_text(sheet['A' + str(i + 3)], "Basic hours:", font=self.font_bold, alignment=self.alignment_right)
+            XlsxDocumentService.put_time(sheet['B' + str(i + 3)], total_basic_deficit, self.font_bold)
+            XlsxDocumentService.put_text(sheet['A' + str(i + 4)], "Deficit:", font=self.font_bold,
+                                         alignment=self.alignment_right)
+            XlsxDocumentService.put_time(sheet['B' + str(i + 4)], total_deficit, self.font_bold)
 
         wb.save(file_path)
 
-    def put_time(self, cell: Cell, duration, font=None, border=None, alignment=None):
-        cell = self.put_text(cell, duration, font, border, alignment)
+    def get_date_color(self, day: date, vacation_list):
+        if is_weekend(day):
+            return self.font_red
+        elif XlsxDocumentService.is_vacation_day(day, vacation_list):
+            return self.font_orange
+        else:
+            return None
+
+    @staticmethod
+    def is_vacation_day(day: date, vacation_list: List[Vacation]):
+        for vacation in vacation_list:
+            if vacation.start_date <= day <= vacation.end_date:
+                return True
+        return False
+
+    @staticmethod
+    def put_time(cell: Cell, duration, font=None, border=None, alignment=None):
+        cell = XlsxDocumentService.put_text(cell, duration, font, border, alignment)
         cell.number_format = '0.00'
         return cell
 
-    def put_text(self, cell: Cell, text, font=None, border=None, alignment=None):
+    @staticmethod
+    def put_text(cell: Cell, text, font=None, border=None, alignment=None):
         cell.value = text
         if font:
             cell.font = font

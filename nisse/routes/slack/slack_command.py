@@ -5,10 +5,11 @@ from flask import request
 from flask_injector import inject
 from flask_restful import Resource
 
-from nisse.models.slack.errors import ErrorSchema, Error
+from nisse.models.slack.errors import Error
 from nisse.models.slack.message import Message
 from nisse.routes.slack.command_handlers.delete_time_command_handler import DeleteTimeCommandHandler
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
+from nisse.routes.slack.command_handlers.project_command_handler import ProjectCommandHandler
 from nisse.routes.slack.command_handlers.reminder_command_handler import ReminderCommandHandler
 from nisse.routes.slack.command_handlers.report_command_handler import ReportCommandHandler
 from nisse.routes.slack.command_handlers.show_help_command_handler import ShowHelpCommandHandler
@@ -27,10 +28,11 @@ class SlackCommand(Resource):
                  set_reminder_handler: ReminderCommandHandler,
                  show_help_handler: ShowHelpCommandHandler,
                  report_command_handler: ReportCommandHandler,
-                 delete_time_command_handler: DeleteTimeCommandHandler):
+                 delete_time_command_handler: DeleteTimeCommandHandler,
+                 project_command_handler: ProjectCommandHandler):
         self.app = app
         self.set_reminder_handler = set_reminder_handler
-        self.error_schema = ErrorSchema()
+        self.error_schema = Error.Schema()
         self.dispatcher = {
             None: submit_time_command_handler.show_dialog,
             "": submit_time_command_handler.show_dialog,
@@ -39,6 +41,7 @@ class SlackCommand(Resource):
             'delete': delete_time_command_handler.select_project,
             'vacation': vacation_command_handler.dispatch_vacation,
             'reminder': set_reminder_handler.dispatch_reminder,
+            'project': project_command_handler.dispatch_project_command,
             'help': show_help_handler.create_help_command_message
         }
 
@@ -71,7 +74,7 @@ class SlackCommand(Resource):
     @staticmethod
     def handle_other(commands_body, arguments, action):
         return Message(
-            text="Oops, I don't understand *" + action + "* :thinking_face:",
+            text="Oops, I don't understand *" + action + "* command :thinking_face:",
             response_type="ephemeral",
             mrkdwn=True
         ).dump()

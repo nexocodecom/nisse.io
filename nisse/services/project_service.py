@@ -1,7 +1,9 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_injector import inject
-from nisse.models.database import Project, User, UserProject, TimeEntry
 import datetime
+
+from flask_injector import inject
+from flask_sqlalchemy import SQLAlchemy
+
+from nisse.models.database import Project, User, UserProject, TimeEntry
 
 
 class ProjectService(object):
@@ -43,6 +45,14 @@ class ProjectService(object):
         user_project = UserProject(
             project_id=project.project_id, user_id=user.user_id)
         self.db.session.add(user_project)
+        self.db.session.commit()
+
+    def unassign_user_from_project(self, project: Project, user: User):
+        user_project: UserProject = self.db.session.query(UserProject)\
+            .filter(UserProject.user_id == user.user_id)\
+            .filter(UserProject.project_id == project.project_id)\
+            .first()
+        self.db.session.delete(user_project)
         self.db.session.commit()
 
     def report_user_time(self, project: Project, user: User, duration: float, comment: str, report_date: datetime):
