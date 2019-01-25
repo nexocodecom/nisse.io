@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from nisse.models.slack.payload import RemindTimeReportBtnPayload
 from nisse.services import UserService
+from nisse.services import VacationService
 from nisse.utils.date_helper import *
 from nisse.utils.string_helper import get_full_class_name
 
@@ -16,15 +17,21 @@ def get_users_to_notify(logger, config, date_from: date, date_to: date):
     try:
         session = session_maker()
         user_service = UserService(session, Bcrypt())
+        vacation_service = VacationService(session)
 
         result = []
         users = user_service.get_users_to_notify_last_period(minutes=5)
         for user in users:
             time_entries = user_service.get_time_entry_date_range(user.user_id, date_from, date_to)
-            days_reported = set(map(lambda te: te.report_date, time_entries))
+            reported_days = set(map(lambda te: te.report_date, time_entries))
+            vacations = vacation_service.get_vacations_by_dates(user.user_id, date_from, date_to)
+
             all_days = set(date_range(date_from, date_to + timedelta(days=1)))
 
-            result.append([user, sorted(all_days - days_reported)])
+            for vac in vacations:
+                all_days -= set(date_range(vac.start_date, vac.end_date + timedelta(days=1)))
+
+            result.append([user, sorted(all_days - reported_days)])
 
         return result
 
@@ -103,10 +110,9 @@ def remind(logger, config):
     slack_client = SlackClient(config['SLACK_BOT_ACCESS_TOKEN'])
     is_friday = date.today().weekday() == 4
 
-    date_to = datetime.utcnow().date()
-    date_from = date_to - timedelta(days=4) if is_friday else date_to
+    remind_from = remind_date - timedelta(days=4) if is_friday else remind_date
 
-    users = get_users_to_notify(logger, config, date_from, date_to)
+    users = get_users_to_notify(logger, config, remind_from, remind_date)
 
     for (user, dates) in users:
         logger.info('Sending notification for user: ' + user.username)
@@ -122,8 +128,7 @@ def remind(logger, config):
         if is_friday and len(dates) > 1:
             message = get_friday_slack_message(config, dates)
         else:
-            message = get_everyday_slack_message(config, date_to)
-
+            message = get_everyday_slack_message(config, remind_date)
 
         resp = slack_client.api_call(
             "chat.postMessage",
