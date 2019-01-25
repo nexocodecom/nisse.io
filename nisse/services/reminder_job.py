@@ -26,7 +26,8 @@ def get_users_to_notify(logger, config, date_from: date, date_to: date):
             reported_days = set(map(lambda te: te.report_date, time_entries))
             vacations = vacation_service.get_vacations_by_dates(user.user_id, date_from, date_to)
 
-            all_days = set(date_range(date_from, date_to + timedelta(days=1)))
+            all_days = set(filter(lambda day: not is_holiday_poland(day) and not is_weekend(day),
+                                  date_range(date_from, date_to + timedelta(days=1))))
 
             for vac in vacations:
                 all_days -= set(date_range(vac.start_date, vac.end_date + timedelta(days=1)))
@@ -103,14 +104,14 @@ def get_friday_slack_message(config, remind_dates):
 def remind(logger, config):
     logger.info('Reminder job started: ' + str(datetime.utcnow().time()))
 
-    remind_date = datetime.now()
-    if is_holiday_poland(remind_date.date()):
+    remind_date = datetime.utcnow().date()
+    if is_holiday_poland(remind_date):
         return
 
     slack_client = SlackClient(config['SLACK_BOT_ACCESS_TOKEN'])
     is_friday = date.today().weekday() == 4
 
-    remind_from = remind_date - timedelta(days=4) if is_friday else remind_date
+    remind_from = remind_date - timedelta(days=6) if is_friday else remind_date
 
     users = get_users_to_notify(logger, config, remind_from, remind_date)
 
