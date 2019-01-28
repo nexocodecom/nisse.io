@@ -17,6 +17,7 @@ class TimeRanges(Enum):
     this_month = 'This month'
     previous_month = 'Previous month'
 
+
 def get_start_end_date(time_range_selected, now = dt.now()):
     if time_range_selected == TimeRanges.yesterday.value:
         start = end = now.date() - timedelta(1)
