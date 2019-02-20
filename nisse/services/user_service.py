@@ -1,6 +1,7 @@
 import datetime
 import random
 import string
+from datetime import timedelta, datetime
 from typing import List
 
 from flask_bcrypt import Bcrypt
@@ -152,7 +153,10 @@ class UserService(object):
         user.remind_time_sunday = user_times.remind_time_sunday
         self.db.commit()
 
-    def get_users_to_notify(self, date, day_of_week, start_time, end_time):
+    def get_users_to_notify_last_period(self, minutes):
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(minutes=minutes)
+
         user_remind_column_by_weekday = {
             0: User.remind_time_monday,
             1: User.remind_time_tuesday,
@@ -163,9 +167,12 @@ class UserService(object):
             6: User.remind_time_sunday,
         }
         return self.db.query(User) \
-            .outerjoin(TimeEntry, and_(User.user_id == TimeEntry.user_id, TimeEntry.report_date == date)) \
-            .filter(user_remind_column_by_weekday[day_of_week] > start_time,
-                    user_remind_column_by_weekday[day_of_week] <= end_time) \
-            .filter(TimeEntry.report_date == None) \
+            .filter(user_remind_column_by_weekday[end_date.weekday()] > start_date.time(),
+                    user_remind_column_by_weekday[end_date.weekday()] <= end_date.time()) \
             .all()
 
+    def get_time_entry_date_range(self, user_id, date_from, date_to):
+        return self.db.query(TimeEntry) \
+            .filter(and_(TimeEntry.user_id == user_id, TimeEntry.report_date >= date_from,
+                         TimeEntry.report_date <= date_to)) \
+            .all()
