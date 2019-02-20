@@ -231,7 +231,7 @@ class SlackCommandServiceTests(unittest.TestCase):
     
     def test_get_start_end_date_should_return_correct_start_end_date(self):
         # arrange
-        date = datetime(2018, 5, 14)        
+        date = datetime(2018, 5, 14).date()
 
         # act
         today_start_end = get_start_end_date(TimeRanges.today.value, date)
@@ -244,7 +244,7 @@ class SlackCommandServiceTests(unittest.TestCase):
         # assert
         self.assertEqual(today_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 14).date()))
         self.assertEqual(yesterday_start_end, (datetime(2018, 5, 13).date(), datetime(2018, 5, 13).date()))
-        self.assertEqual(this_week_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 20).date()))
+        self.assertEqual(this_week_start_end, (datetime(2018, 5, 14).date(), datetime(2018, 5, 14).date()))
         self.assertEqual(previous_week_start_end, (datetime(2018, 5, 7).date(), datetime(2018, 5, 13).date()))
-        self.assertEqual(this_month_start_end, (datetime(2018, 5, 1).date(), datetime(2018, 5, 31).date()))
+        self.assertEqual(this_month_start_end, (datetime(2018, 5, 1).date(), datetime(2018, 5, 14).date()))
         self.assertEqual(previous_month_start_end, (datetime(2018, 4, 1).date(), datetime(2018, 4, 30).date()))
