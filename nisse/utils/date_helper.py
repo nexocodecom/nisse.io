@@ -17,31 +17,36 @@ class TimeRanges(Enum):
     this_month = 'This month'
     previous_month = 'Previous month'
 
-def get_start_end_date(time_range_selected, now = dt.now()):
+
+def get_start_end_date(time_range_selected, base: datetime = None):
+    if not base:
+        base = dt.now().date()
     if time_range_selected == TimeRanges.yesterday.value:
-        start = end = now.date() - timedelta(1)
+        start = end = base - timedelta(1)
     elif time_range_selected == TimeRanges.this_week.value:
-        start = now.date() - timedelta(days=now.date().weekday())
+        start = base - timedelta(days=base.weekday())
         end = start + timedelta(6)
     elif time_range_selected == TimeRanges.previous_week.value:
-        start = now.date() - timedelta(days=now.date().weekday() + 7)
+        start = base - timedelta(days=base.weekday() + 7)
         end = start + timedelta(6)
     elif time_range_selected == TimeRanges.this_2_week.value:
-        start = now.date() - timedelta(days=now.date().weekday() + 7)
+        start = base - timedelta(days=base.weekday() + 7)
         end = start + timedelta(13)
     elif time_range_selected == TimeRanges.previous_2_week.value:
-        start = now.date() - timedelta(days=now.date().weekday() + 14)
+        start = base - timedelta(days=base.weekday() + 14)
         end = start + timedelta(13)
     elif time_range_selected == TimeRanges.this_month.value:
-        start = dt(now.year, now.month, 1).date()
-        end = dt(now.year, now.month, monthrange(now.year, now.month)[1]).date()
+        start = dt(base.year, base.month, 1).date()
+        end = dt(base.year, base.month, monthrange(base.year, base.month)[1]).date()
     elif time_range_selected == TimeRanges.previous_month.value:
-        prev_month = 12 if now.month == 1 else now.month - 1
-        year = now.year - 1 if now.month == 1 else now.year
+        prev_month = 12 if base.month == 1 else base.month - 1
+        year = base.year - 1 if base.month == 1 else base.year
         start = dt(year, prev_month, 1).date()
         end = dt(year, prev_month, monthrange(year, prev_month)[1]).date()
     else:
-        start = end = now.date()
+        start = end = base
+
+    end = base if end > base else end
 
     return start, end
 

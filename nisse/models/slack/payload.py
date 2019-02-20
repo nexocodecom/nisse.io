@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 
 from marshmallow import Schema, fields, post_load, ValidationError
 from marshmallow_oneofschema import OneOfSchema
 
+from nisse.utils.date_helper import parse_formatted_date
 from nisse.utils.string_helper import get_full_class_name
 from nisse.utils.validation_helper import is_number, validate_date
 
@@ -15,6 +16,12 @@ def check_duration_hours(duration):
 def check_duration_minutes(duration):
     if not is_number(duration) or (int(duration) % 15 != 0):
         raise ValidationError("Use integers 0|15|30|45 only", ["minutes"])
+
+
+def check_date_not_from_future(day):
+    validate_date(day)
+    if parse_formatted_date(day) > datetime.now().date():
+        raise ValidationError("Provided date is from the future")
 
 
 def check_date(day):
@@ -80,7 +87,7 @@ class ReportGenerateForm(object):
 
         project = fields.String(allow_none=True)
         day_from = fields.String(validate=check_date)
-        day_to = fields.String(validate=check_date)
+        day_to = fields.String(validate=check_date_not_from_future)
         user = fields.String(allow_none=True)
 
         @post_load

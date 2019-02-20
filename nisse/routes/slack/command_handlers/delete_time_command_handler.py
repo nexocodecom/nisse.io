@@ -8,7 +8,7 @@ from slackclient import SlackClient
 from nisse.models import TimeEntry
 from nisse.models.slack.common import ActionType
 from nisse.models.slack.dialog import Dialog
-from nisse.models.slack.message import Action, Attachment, Message, TextSelectOption
+from nisse.models.slack.message import Action, Attachment, Message, TextSelectOption, Confirmation
 from nisse.models.slack.payload import DeleteTimeEntryPayload
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 from nisse.services.project_service import ProjectService
@@ -53,19 +53,9 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
         elif action_name == 'time_entries_list':
             # time entry selected
             time_entry_id_selected = action.selected_options[0].value
-            time_entry: TimeEntry = self.user_service.get_time_entry(user.user_id, time_entry_id_selected)
 
-            return DeleteTimeCommandHandler.create_time_entry_selected_message(time_entry).dump()
-
-        elif action_name == 'remove':
-            # confirmation
-            self.user_service.delete_time_entry(user.user_id, int(action.value))
+            self.user_service.delete_time_entry(user.user_id, time_entry_id_selected)
             return Message(text="Time entry removed! :wink:", response_type="ephemeral").dump()
-
-        elif action_name == 'cancel':
-            # cancellation
-            return Message(text="Canceled :wink:", response_type="ephemeral").dump()
-
         else:
             logging.error("Unsupported action name: {0}".format(action_name))
             raise NotImplementedError()
@@ -109,27 +99,6 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
         )
 
     @staticmethod
-    def create_time_entry_selected_message(time_entry):
-        actions = [
-            Action(name="remove", text="Remove", style="danger", type=ActionType.BUTTON.value,
-                   value=str(time_entry.time_entry_id)),
-            Action(name="cancel", text="Cancel", type=ActionType.BUTTON.value, value="remove")
-        ]
-        attachments = [
-            Attachment(
-                text="Click 'Remove' to confirm:",
-                color="#3AA3E3", attachment_type="default",
-                callback_id=string_helper.get_full_class_name(DeleteTimeEntryPayload),
-                actions=actions)
-        ]
-        return Message(
-            text="Time entry will be removed...",
-            response_type="ephemeral",
-            mrkdwn=True,
-            attachments=attachments
-        )
-
-    @staticmethod
     def create_project_selected_message(last_time_entries, selected_project) -> Message:
 
         actions = [
@@ -138,7 +107,8 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
                 text="Select time entry",
                 type=ActionType.SELECT.value,
                 options=[TextSelectOption(text=string_helper.make_option_time_string(te), value=te.time_entry_id)
-                         for te in last_time_entries]
+                         for te in last_time_entries],
+                confirm=Confirmation(title="Delete confirmation", text="Click 'Remove' to confirm", ok_text="Remove", dismiss_text="Cancel")
             ),
         ]
         attachments = [
