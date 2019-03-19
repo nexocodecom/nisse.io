@@ -49,7 +49,7 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
         slack_user_id = command_body['user_id']
         report_date = self.current_date().strftime("%Y-%m-%d") if(isinstance(action, str) or action is None) else action.value
 
-        slack_user_details = self.user_service.get_user_by_slack_id(
+        slack_user_details = self.get_user_by_slack_user_id(
             slack_user_id)
 
         project_options_list: List[LabelSelectOption] = self.get_projects_option_list_as_label(
