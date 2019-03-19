@@ -67,7 +67,7 @@ class ShowHelpCommandHandler(SlackCommandHandler):
             )
         ]
 
-        user: User = self.get_user_by_slack_id(command_body['user_id'])
+        user: User = self.get_user_by_slack_user_id(command_body['user_id'])
 
         if user.role.role == 'admin':
             attachments.append(Attachment(
