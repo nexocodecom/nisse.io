@@ -65,7 +65,7 @@ class DeleteTimeCommandHandler(SlackCommandHandler):
 
     def select_project(self, command_body, argument, action):
 
-        user = self.get_user_by_slack_id(command_body['user_id'])
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
         project_options_list: List[TextSelectOption] = self.get_projects_option_list_as_text(user.user_id)
         user_default_project_id = self.get_default_project_id(project_options_list[0].value, user)
 

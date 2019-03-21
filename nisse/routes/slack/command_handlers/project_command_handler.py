@@ -90,7 +90,7 @@ class ProjectCommandHandler(SlackCommandHandler):
 
     def select_project(self, slack_user_id, arguments):
 
-        user = self.get_user_by_slack_id(slack_user_id)
+        user = self.get_user_by_slack_user_id(slack_user_id)
         project_options_list: List[TextSelectOption] = self.get_projects_option_list_as_text()
         user_default_project_id = self.get_default_project_id(project_options_list[0].value, user)
 
@@ -152,7 +152,7 @@ class ProjectCommandHandler(SlackCommandHandler):
 
     def dispatch_project_command(self, command_body, arguments, action):
 
-        user = self.get_user_by_slack_id(command_body['user_id'])
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
 
         if user.role.role != 'admin':
             return Message(text="You have insufficient privileges to use this command... :neutral_face:",
