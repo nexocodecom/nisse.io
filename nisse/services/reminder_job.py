@@ -32,7 +32,10 @@ def get_users_to_notify(logger, config, date_from: date, date_to: date):
             for vac in vacations:
                 all_days -= set(date_range(vac.start_date, vac.end_date + timedelta(days=1)))
 
-            result.append([user, sorted(all_days - reported_days)])
+            dates_to_remind = sorted(all_days - reported_days)
+
+            if len(dates_to_remind) > 0:
+                result.append([user, dates_to_remind])
 
         return result
 
