@@ -52,7 +52,7 @@ class ReminderServiceTests(unittest.TestCase):
         service = ReminderService(self.mock_user_service, logging.getLogger(), 'Europe/Warsaw')
 
         date_dst = datetime.datetime(1900, 1, 1, 13, 0)
-        hours_offset = datetime.datetime.now(pytz.timezone('Europe/Warsaw')).utcoffset()
+        hours_offset = datetime.datetime.utcnow().astimezone(pytz.timezone('Europe/Warsaw')).utcoffset()
 
         # Act, Assert
         time = service.native_time_to_utc((date_dst + hours_offset).time())
@@ -67,6 +67,6 @@ class ReminderServiceTests(unittest.TestCase):
         date_obj = datetime.datetime(1900, 1, 1, 13, 0)
         service = ReminderService(self.mock_user_service, logging.getLogger(),'Europe/Warsaw')
         time = service.utc_time_to_local_time_string(date_obj.time())
-        hours_offset = datetime.datetime.now(pytz.timezone('Europe/Warsaw')).utcoffset()
+        hours_offset = datetime.datetime.utcnow().astimezone(pytz.timezone('Europe/Warsaw')).utcoffset()
         # Assert
         self.assertEqual(time, (date_obj + hours_offset).strftime("%H:%M"))
