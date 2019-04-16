@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 import pytz
@@ -58,9 +57,9 @@ class ReminderService(object):
         if isinstance(native_time, str):
             if native_time.lower() == 'off':
                 return None
-            native_time = datetime.datetime.strptime(native_time, "%H:%M").time()
+            native_time = datetime.strptime(native_time, "%H:%M").time()
 
-        local_dt = datetime.datetime.combine(datetime.datetime.now(), native_time).astimezone(self.get_user_tz())
+        local_dt = datetime.combine(datetime.now(), native_time).astimezone(self.get_user_tz())
         utc_dt = local_dt.astimezone(pytz.UTC)
 
         return ReminderService.format_time(utc_dt.time())
@@ -70,7 +69,7 @@ class ReminderService(object):
             return 'OFF'
 
         # create time based on current date and time stripped from string
-        utc_dt = datetime.datetime.combine(datetime.datetime.utcnow(), utc_time, tzinfo=pytz.UTC)
+        utc_dt = datetime.combine(datetime.utcnow(), utc_time, tzinfo=pytz.UTC)
 
         # convert local time into local zone
         user_dt = utc_dt.astimezone(self.get_user_tz())
