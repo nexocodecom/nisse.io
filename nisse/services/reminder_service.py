@@ -59,7 +59,7 @@ class ReminderService(object):
                 return None
             native_time = datetime.strptime(native_time, "%H:%M").time()
 
-        local_dt = datetime.combine(datetime.now(), native_time).astimezone(self.get_user_tz())
+        local_dt = datetime.combine(datetime.utcnow(), native_time).astimezone(self.get_user_tz())
         utc_dt = local_dt.astimezone(pytz.UTC)
 
         return ReminderService.format_time(utc_dt.time())
