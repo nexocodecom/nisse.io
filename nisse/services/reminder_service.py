@@ -59,7 +59,7 @@ class ReminderService(object):
                 return None
             native_time = datetime.strptime(native_time, "%H:%M").time()
 
-        local_dt = datetime.combine(datetime.utcnow(), native_time).astimezone(self.get_user_tz())
+        local_dt = pytz.timezone('Europe/Warsaw').localize(datetime.combine(datetime.utcnow(), native_time))
         utc_dt = local_dt.astimezone(pytz.UTC)
 
         return ReminderService.format_time(utc_dt.time())
@@ -68,10 +68,7 @@ class ReminderService(object):
         if utc_time is None:
             return 'OFF'
 
-        # create time based on current date and time stripped from string
-        utc_dt = datetime.combine(datetime.utcnow(), utc_time, tzinfo=pytz.UTC)
-
-        # convert local time into local zone
+        utc_dt = pytz.UTC.localize(datetime.combine(datetime.utcnow(), utc_time))
         user_dt = utc_dt.astimezone(self.get_user_tz())
 
         return ReminderService.format_time(user_dt.time())
