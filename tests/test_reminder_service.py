@@ -1,7 +1,9 @@
 import datetime
-import unittest
-import mock
 import logging
+import unittest
+
+import mock
+import pytz
 
 from nisse.models import User
 from nisse.services.reminder_service import ReminderService
@@ -49,17 +51,22 @@ class ReminderServiceTests(unittest.TestCase):
         # Arrange
         service = ReminderService(self.mock_user_service, logging.getLogger(), 'Europe/Warsaw')
 
-        # Act, Assert
-        time = service.naive_time_to_utc('14:00')
-        self.assertEqual(time, datetime.datetime(1900, 1, 1, 13, 0).time())
+        date_dst = datetime.datetime(1900, 1, 1, 13, 0)
+        hours_offset = datetime.datetime.now(pytz.timezone('Europe/Warsaw')).utcoffset()
 
         # Act, Assert
-        time = service.naive_time_to_utc('Off')
+        time = service.native_time_to_utc((date_dst + hours_offset).time())
+        self.assertEqual(time, date_dst.time().strftime("%H:%M"))
+
+        # Act, Assert
+        time = service.native_time_to_utc('Off')
         self.assertEqual(time, None)
 
     def test_utc_time_to_local_time_string_should_return_correct_string(self):
         # Arrange
+        date_obj = datetime.datetime(1900, 1, 1, 13, 0)
         service = ReminderService(self.mock_user_service, logging.getLogger(),'Europe/Warsaw')
-        time = service.utc_time_to_local_time_string(datetime.datetime(1900, 1, 1, 13, 0).time())
+        time = service.utc_time_to_local_time_string(date_obj.time())
+        hours_offset = datetime.datetime.now(pytz.timezone('Europe/Warsaw')).utcoffset()
         # Assert
-        self.assertEqual(time, "14:00")
+        self.assertEqual(time, (date_obj + hours_offset).strftime("%H:%M"))

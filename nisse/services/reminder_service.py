@@ -1,8 +1,9 @@
-import logging
-from nisse.services.user_service import *
-from dateutil import tz
-import pytz
 import datetime
+import logging
+
+import pytz
+
+from nisse.services.user_service import *
 
 
 class ReminderService(object):
@@ -35,12 +36,12 @@ class ReminderService(object):
             times_dic = {day[:3]: day[4:] for day in config.split(';')}
             for key, value in self.user_reminder_time_column_day_map.items():
                 if key in times_dic:
-                    user.__setattr__(value, self.naive_time_to_utc(times_dic[key]))
+                    user.__setattr__(value, self.native_time_to_utc(times_dic[key]))
                     contains_day_name = True
 
             # config string does not contains day name
             if not contains_day_name:
-                time_from_param = self.naive_time_to_utc(config)
+                time_from_param = self.native_time_to_utc(config)
                 # set time Monday-Friday
                 keys = ('mon', 'tue', 'wed', 'thu', 'fri')
                 for key, value in self.user_reminder_time_column_day_map.items():
@@ -53,46 +54,32 @@ class ReminderService(object):
         self.user_service.update_remind_times(user)
         return True
 
-    def naive_time_to_utc(self, naive):
-        if isinstance(naive, str):
-            if naive.lower() == 'off':
+    def native_time_to_utc(self, native_time):
+        if isinstance(native_time, str):
+            if native_time.lower() == 'off':
                 return None
-            naive = datetime.datetime.strptime(naive, "%H:%M")
+            native_time = datetime.datetime.strptime(native_time, "%H:%M").time()
 
-        # find current date in user time
-        from_zone = tz.gettz('UTC')
-        user_zone = pytz.timezone(self.time_zone_name)
-        utc = datetime.datetime.utcnow()
-        utc = utc.replace(tzinfo=from_zone)
-        user_time = utc.astimezone(user_zone)
+        local_dt = datetime.datetime.combine(datetime.datetime.now(), native_time).astimezone(self.get_user_tz())
+        utc_dt = local_dt.astimezone(pytz.UTC)
 
-        # create time based on current date and time stripped from string
-        naive = datetime.datetime.combine(user_time.date(), naive.time())
+        return ReminderService.format_time(utc_dt.time())
 
-        # convert local time into UTC
-        user_dt = user_zone.localize(naive, is_dst=None)
-        utc_dt = user_dt.astimezone(pytz.utc)
-
-        # calculate daylight saving timedelta
-        dst_delta = user_zone.dst(naive)
-
-        return (utc_dt - dst_delta).time()
-
-    def utc_time_to_local_time_string(self, utc):
-        if utc is None:
+    def utc_time_to_local_time_string(self, utc_time):
+        if utc_time is None:
             return 'OFF'
 
-        # find current date in local time
-        from_zone = pytz.timezone("UTC")
-        user_zone = pytz.timezone(self.time_zone_name)
-        now = datetime.datetime.utcnow()
-        user_time = now.astimezone(user_zone)
-
         # create time based on current date and time stripped from string
-        naive = datetime.datetime.combine(user_time.date(), utc)
+        utc_dt = datetime.datetime.combine(datetime.datetime.utcnow(), utc_time, tzinfo=pytz.UTC)
 
         # convert local time into local zone
-        utc_dt = from_zone.localize(naive, is_dst=None)
-        user_dt = utc_dt.astimezone(user_zone)
+        user_dt = utc_dt.astimezone(self.get_user_tz())
 
-        return user_dt.time().strftime("%H:%M")
+        return ReminderService.format_time(user_dt.time())
+
+    def get_user_tz(self):
+        return pytz.timezone(self.time_zone_name)
+
+    @staticmethod
+    def format_time(time):
+        return time.strftime("%H:%M")
