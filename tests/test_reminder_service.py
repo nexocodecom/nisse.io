@@ -29,8 +29,8 @@ class ReminderServiceTests(unittest.TestCase):
         # Act
         service.set_user_reminder_config(mocked_user, 'mon:15:12')
         # Assert
-        self.assertNotEqual(mocked_user.remind_time_monday, None)
-        self.assertEqual(mocked_user.remind_time_tuesday, None)
+        self.assertIsNotNone(mocked_user.remind_time_monday)
+        self.assertIsNone(mocked_user.remind_time_tuesday)
 
     def test_set_reminder_when_only_time_provided_should_set_time_from_monday_till_friday(self):
         # Arrange
@@ -39,13 +39,13 @@ class ReminderServiceTests(unittest.TestCase):
         # Act
         service.set_user_reminder_config(mocked_user, '15:00')
         # Assert
-        self.assertNotEqual(mocked_user.remind_time_monday, None)
-        self.assertNotEqual(mocked_user.remind_time_tuesday, None)
-        self.assertNotEqual(mocked_user.remind_time_wednesday, None)
-        self.assertNotEqual(mocked_user.remind_time_thursday, None)
-        self.assertNotEqual(mocked_user.remind_time_friday, None)
-        self.assertEqual(mocked_user.remind_time_saturday, None)
-        self.assertEqual(mocked_user.remind_time_sunday, None)
+        self.assertIsNotNone(mocked_user.remind_time_monday)
+        self.assertIsNotNone(mocked_user.remind_time_tuesday)
+        self.assertIsNotNone(mocked_user.remind_time_wednesday)
+        self.assertIsNotNone(mocked_user.remind_time_thursday)
+        self.assertIsNotNone(mocked_user.remind_time_friday)
+        self.assertIsNone(mocked_user.remind_time_saturday)
+        self.assertIsNone(mocked_user.remind_time_sunday)
 
     def test_naive_time_to_utc_should_convert_time_correctly(self):
         # Arrange
