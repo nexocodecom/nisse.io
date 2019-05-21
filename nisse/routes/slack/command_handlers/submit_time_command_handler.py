@@ -11,7 +11,7 @@ from nisse.models.DTO import TimeRecordDto
 from nisse.models.slack.common import LabelSelectOption
 from nisse.models.slack.dialog import Element, Dialog
 from nisse.models.slack.message import Attachment
-from nisse.models.slack.payload import TimeReportingFormPayload
+from nisse.models.slack.payload import TimeReportingFormPayload, DAILY_HOUR_LIMIT
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 from nisse.services.project_service import ProjectService
 from nisse.services.reminder_service import ReminderService
@@ -19,8 +19,6 @@ from nisse.services.user_service import UserService
 from nisse.utils import string_helper
 from nisse.utils.date_helper import get_float_duration
 from nisse.utils.validation_helper import list_find
-
-DAILY_HOUR_LIMIT = 20
 
 
 class SubmitTimeCommandHandler(SlackCommandHandler):
@@ -73,7 +71,7 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
 
     @staticmethod
     def get_duration_hours():
-        return [LabelSelectOption(n, n) for n in range(1, 13)]
+        return [LabelSelectOption(n, n) for n in range(1, DAILY_HOUR_LIMIT+1)]
 
     @staticmethod
     def get_duration_minutes() -> List[LabelSelectOption]:

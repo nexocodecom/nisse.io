@@ -7,10 +7,12 @@ from nisse.utils.date_helper import parse_formatted_date
 from nisse.utils.string_helper import get_full_class_name
 from nisse.utils.validation_helper import is_number, validate_date
 
+DAILY_HOUR_LIMIT = 24
+
 
 def check_duration_hours(duration):
-    if not is_number(duration) or int(duration) > 12:
-        raise ValidationError("Use integers, e.g. 2 up to 12", ["hours"])
+    if not is_number(duration) or int(duration) > DAILY_HOUR_LIMIT:
+        raise ValidationError(str("Use integers, e.g. 2 up to ", DAILY_HOUR_LIMIT), ["hours"])
 
 
 def check_duration_minutes(duration):
