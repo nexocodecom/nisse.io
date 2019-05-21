@@ -227,7 +227,7 @@ class SlackCommandServiceTests(unittest.TestCase):
         # assert        
         time.sleep(0.5)
         self.assertEqual(len(sent_chat_msgs), 1)
-        self.assertEqual(sent_chat_msgs[0], "Sorry, but You can't submit more than 20 hours for one day.")
+        self.assertEqual(sent_chat_msgs[0], "Sorry, but You can't submit more than 24 hours for one day.")
     
     def test_get_start_end_date_should_return_correct_start_end_date(self):
         # arrange
