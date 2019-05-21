@@ -9,7 +9,7 @@ flask-sqlalchemy
 flask-injector
 flask-migrate
 pymysql
-alembic
+alembic==1.0.0
 SlackClient
 flask_oauthlib
 google-auth
