@@ -78,10 +78,6 @@ class VacationCommandHandler(SlackCommandHandler):
 
     def validate_new_vacation(self, start_date, end_date, user):
 
-        if start_date <= self.current_date().date():
-            raise ValidationError(
-                'Vacation must start in the future', ['start_date'])
-
         if end_date < start_date:
             raise ValidationError(
                 'End date must not be lower than start date', ['end_date'])

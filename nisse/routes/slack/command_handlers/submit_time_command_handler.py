@@ -20,7 +20,7 @@ from nisse.utils import string_helper
 from nisse.utils.date_helper import get_float_duration
 from nisse.utils.validation_helper import list_find
 
-DAILY_HOUR_LIMIT = 20
+DAILY_HOUR_LIMIT = 24
 
 
 class SubmitTimeCommandHandler(SlackCommandHandler):
