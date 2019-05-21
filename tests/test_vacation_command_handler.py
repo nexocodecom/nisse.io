@@ -92,9 +92,7 @@ class TestVacationCommanHandler(TestCase):
             self.handler.handle(payload)
             self.fail()
         except ValidationError as err:
-            self.assertEqual(
-                err.messages, ['Vacation must start in the future'])
-            self.assertEqual(err.field_names, ['start_date'])
+            self.assertEqual(err.field_names, ['end_date'])
 
     def test_new_daysoff_should_check_if_start_date_is_not_lower_than_end_date(self):
         #Arrange
