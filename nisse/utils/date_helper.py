@@ -76,7 +76,8 @@ def is_holiday_poland(day: date):
         parse_formatted_date('{0}-11-11'.format(day.year)),
         parse_formatted_date('{0}-12-25'.format(day.year)),
         parse_formatted_date('{0}-12-26'.format(day.year)),
-        est + timedelta(days=1)
+        est + timedelta(days=1),
+        est + timedelta(days=60)
     ]
 
 
