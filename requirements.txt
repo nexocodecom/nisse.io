@@ -10,7 +10,7 @@ flask-injector
 flask-migrate
 pymysql
 alembic==1.0.0
-SlackClient
+SlackClient==1.2.1
 flask_oauthlib
 google-auth
 apscheduler
