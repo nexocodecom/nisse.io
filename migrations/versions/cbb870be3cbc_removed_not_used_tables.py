@@ -21,7 +21,7 @@ def upgrade():
     op.add_column('tokens', sa.Column('client_secret', sa.String(length=255), nullable=True))
     op.create_unique_constraint('tokens_client_id_key', 'tokens', ['client_id'])
     #op.drop_constraint('tokens_user_id_fkey', 'tokens', type_='foreignkey')
-    #op.drop_constraint('tokens_client_id_fkey', 'tokens', type_='foreignkey')
+    op.drop_constraint('tokens_client_id_fkey', 'tokens', type_='foreignkey')
     op.drop_table('clients')
     op.drop_column('tokens', 'expires')
     op.drop_column('tokens', 'user_id')
