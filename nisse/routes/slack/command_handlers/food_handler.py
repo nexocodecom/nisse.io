@@ -35,7 +35,7 @@ class FoodHandler(SlackCommandHandler):
             resp = self.slack_client.api_call(
                 "chat.postMessage",
                 channel=payload.channel.name,
-                text=payload.user.name + " zamówił: " + payload.submission.ordered_item + " - " + payload.submission.ordered_item_price + "PLN"
+                text=payload.user.name + " ordered: " + payload.submission.ordered_item + " - " + payload.submission.ordered_item_price + "PLN"
             )
             if not resp["ok"]:
                 self.logger.error(resp)
@@ -45,7 +45,7 @@ class FoodHandler(SlackCommandHandler):
             resp = self.slack_client.api_call(
                 "chat.postMessage",
                 channel=payload.channel.name,
-                text=payload.user.name + " dzisiaj nie zamawia."
+                text=payload.user.name + " is not ordering today."
             )
             if not resp["ok"]:
                 self.logger.error(resp)
@@ -53,10 +53,10 @@ class FoodHandler(SlackCommandHandler):
             order_id = payload.actions['bar']
 
             elements = [
-                Element(label="Zamówienie", type="text", name='ordered_item', placeholder="Co zamawiasz?"),
-                Element(label="Cena", type="text", name='ordered_item_price', placeholder="Cena", value='0.0'),
+                Element(label="Order", type="text", name='ordered_item', placeholder="What do you order?"),
+                Element(label="Price", type="text", name='ordered_item_price', placeholder="Price", value='0.00'),
             ]
-            dialog: Dialog = Dialog(title="Złóż zamówienie", submit_label="Zamawiam",
+            dialog: Dialog = Dialog(title="Place an order", submit_label="I am ordering",
                                 callback_id=string_helper.get_full_class_name(FoodOrderFormPayload), elements=elements,
                                 state=order_id)
             resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog.dump())
@@ -105,8 +105,8 @@ class FoodHandler(SlackCommandHandler):
                     "text": "@" + command_body['user_name'] + " orders from " + ordering_link,
                     "color": "#3AA3E3",
                     "actions": [
-                        {"name": "bar", "text": "Już zamawiam", "type": "button", "value": order.food_order_id},
-                        {"name": "bar", "text": "Pas", "type": "button", "value": "pas"},
+                        {"name": "bar", "text": "I'm ordering right now", "type": "button", "value": order.food_order_id},
+                        {"name": "bar", "text": "Not today", "type": "button", "value": "pas"},
                     ]
                 }
             ]
