@@ -6,6 +6,7 @@ from flask.config import Config
 from flask_injector import inject
 from slackclient import SlackClient
 
+from nisse.models import FoodOrderItem
 from nisse.models.slack.dialog import Dialog, Element
 from nisse.models.slack.payload import Payload, FoodOrderPayload, FoodOrderFormPayload
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
@@ -34,17 +35,29 @@ class FoodHandler(SlackCommandHandler):
         trigger_id = payload.trigger_id
 
         if payload.type == 'dialog_submission':
-            pprint(vars(payload.submission))
+            user = self.user_service.get_user_by_slack_id(payload.user.id)
+            order = self.food_order_service.get_order_by_date(user, datetime.today())
+
+            if order is None:
+                raise RuntimeError("Order not exists")
+
+            ordered_item = self.food_order_service.create_food_order_item(order, user, payload.submission.ordered_item, float(payload.submission.ordered_item_price))
+            if ordered_item is None:
+                raise RuntimeError("Could not order meal")
+
             resp = self.slack_client.api_call(
                 "chat.postMessage",
                 channel=payload.channel.name,
-                text=payload.user.name + " ordered: " + payload.submission.ordered_item + " - " + payload.submission.ordered_item_price + "PLN"
+                text=payload.user.name + " ordered: " + ordered_item.description + " - " + str(ordered_item.cost) + "PLN"
             )
             if not resp["ok"]:
                 self.logger.error(resp)
             return False
 
-        if payload.actions['bar'].value == 'pas':
+        if payload.actions['order-prompt'].value.startswith('pas-'):
+            user = self.user_service.get_user_by_slack_id(payload.user.id)
+            order_id = payload.actions['order-prompt'].value.replace("pas-","")
+            self.food_order_service.skip_food_order_item(order_id, user)
             resp = self.slack_client.api_call(
                 "chat.postMessage",
                 channel=payload.channel.name,
@@ -52,14 +65,14 @@ class FoodHandler(SlackCommandHandler):
             )
             if not resp["ok"]:
                 self.logger.error(resp)
-        else:
-            order_id = payload.actions['bar']
+        elif payload.actions['order-prompt'].value.startswith('order-'):
+            order_id = payload.actions['order-prompt']
 
             elements = [
                 Element(label="Order", type="text", name='ordered_item', placeholder="What do you order?"),
                 Element(label="Price", type="text", name='ordered_item_price', placeholder="Price", value='0.00'),
             ]
-            dialog: Dialog = Dialog(title="Place an order", submit_label="I am ordering",
+            dialog: Dialog = Dialog(title="Place an order", submit_label="Order",
                                 callback_id=string_helper.get_full_class_name(FoodOrderFormPayload), elements=elements,
                                 state=order_id)
             resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog.dump())
@@ -67,6 +80,8 @@ class FoodHandler(SlackCommandHandler):
             if not resp["ok"]:
                 self.logger.error("Can't open dialog submit time: " + resp.get("error"))
             print("order")
+        else:
+            raise RuntimeError("Unsupported action for food order prompt")
 
         return False
 
@@ -90,6 +105,7 @@ class FoodHandler(SlackCommandHandler):
             self.logger.error(resp2)
             raise RuntimeError('failed')
         scheduled_message_id = resp2['scheduled_message_id']
+
         user = self.user_service.get_user_by_slack_id(command_body['user_id'])
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
@@ -110,8 +126,8 @@ class FoodHandler(SlackCommandHandler):
                     "text": "@" + command_body['user_name'] + " orders from " + ordering_link,
                     "color": "#3AA3E3",
                     "actions": [
-                        {"name": "bar", "text": "I'm ordering right now", "type": "button", "value": order.food_order_id},
-                        {"name": "bar", "text": "Not today", "type": "button", "value": "pas"},
+                        {"name": "order-prompt", "text": "I'm ordering right now", "type": "button", "value": "order-" + str(order.food_order_id)},
+                        {"name": "order-prompt", "text": "Not today", "type": "button", "value": "pas-" + str(order.food_order_id)},
                     ]
                 }
             ]
@@ -123,16 +139,31 @@ class FoodHandler(SlackCommandHandler):
 
     def order_checkout(self, command_body, arguments: list, action):
         user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+
+        order_items: [FoodOrderItem] = self.food_order_service.get_food_order_items_by_date(user, datetime.today())
+        order_items_text = ''
+        if order_items:
+            for order_item in order_items:
+                order_items_text += str(order_item.eating_user_id) + " - " + order_item.description + " (" + str(order_item.cost) + " PLN)"
+        #TODO use user.name instead of eating_user_id
+        if order_items_text == '':
+            self.slack_client.api_call(
+                "chat.postMessage",
+                channel=command_body['channel_name'],
+                text="@{} checked out order\nNo orders for today.".format(command_body['user_name'])
+            )
+        else:
+            self.slack_client.api_call(
+                "chat.postMessage",
+                channel=command_body['channel_name'],
+                text=("@{} checked out order\nSummary:\n"+order_items_text).format(command_body['user_name'])
+            )
+
         reminder = self.food_order_service.checkout_order(user, datetime.today())
         if not reminder:
             self.logger.info('No reminder to cancel')
             return
 
-        self.slack_client.api_call(
-            "chat.postMessage",
-            channel=command_body['channel_name'],
-            text="@{} checked out order".format(command_body['user_name'])
-        )
         self.logger.debug('Canceling reminder %s', reminder)
         resp = self.slack_client.api_call(
             "chat.deleteScheduledMessage",
