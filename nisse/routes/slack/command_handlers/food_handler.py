@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from pprint import pprint
 
 from flask.config import Config
@@ -22,19 +23,18 @@ class FoodHandler(SlackCommandHandler):
                  slack_client: SlackClient, project_service: ProjectService,
                  reminder_service: ReminderService, food_order_service: FoodOrderService):
         super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
+        self.food_order_service = food_order_service
 
     # handle button click
     def handle(self, payload: Payload):
-        pprint(vars(payload))
-        # pprint(vars(payload.actions['bar']))
         trigger_id = payload.trigger_id
 
         if payload.type == 'dialog_submission':
             pprint(vars(payload.submission))
             resp = self.slack_client.api_call(
                 "chat.postMessage",
-                channel = payload.channel.name,
-                text = payload.user.name + " zamówił: " + payload.submission.ordered_item + " - " + payload.submission.ordered_item_price + "PLN"
+                channel=payload.channel.name,
+                text=payload.user.name + " zamówił: " + payload.submission.ordered_item + " - " + payload.submission.ordered_item_price + "PLN"
             )
             if not resp["ok"]:
                 self.logger.error(resp)
@@ -69,8 +69,30 @@ class FoodHandler(SlackCommandHandler):
     def create_dialog(self, command_body, argument, action) -> Dialog:
         pass
 
-    def order_start(self, command_body, arguments, action):
-        response = self.slack_client.api_call(
+    def order_start(self, command_body, arguments: list, action):
+        if len(arguments) == 0:
+            raise RuntimeError("argument is required")
+        ordering_link = arguments[0]
+
+        post_at: int = round((datetime.now() + timedelta(seconds=30)).timestamp())
+        resp2 = self.slack_client.api_call(
+            "chat.scheduleMessage",
+            channel=command_body['channel_name'],
+            post_at=post_at,
+            text="@" + command_body['user_name'] + " Looks like you forgot to order",
+            link_names=True
+        )
+        if not resp2["ok"]:
+            self.logger.error(resp2)
+            raise RuntimeError('failed')
+        scheduled_message_id = resp2['scheduled_message_id']
+        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+        order = self.food_order_service.create_food_order(
+            user, datetime.today(), ordering_link,
+            scheduled_message_id)
+        self.logger.info("Created order %d for user %s", order.food_order_id, command_body['user_name'])
+
+        resp = self.slack_client.api_call(
             "chat.postMessage",
             channel=command_body['channel_name'],
             mrkdwn=True,
@@ -79,14 +101,16 @@ class FoodHandler(SlackCommandHandler):
                 {
                     "callback_id": string_helper.get_full_class_name(FoodOrderPayload),
                     "attachment_type": "default",
-                    "text": "@" + command_body['user_name'] + " orders from LINK",
+                    "text": "@" + command_body['user_name'] + " orders from " + ordering_link,
                     "color": "#3AA3E3",
                     "actions": [
-                        {"name": "bar", "text": "Już zamawiam :)", "type": "button", "value": "omg-omg-omg"},
-                        {"name": "bar", "text": "Dziś nie zamawiam", "type": "button", "value": "pas"},
+                        {"name": "bar", "text": "Już zamawiam", "type": "button", "value": order.food_order_id},
+                        {"name": "bar", "text": "Pas", "type": "button", "value": "pas"},
                     ]
                 }
             ]
         )
-        print(response)
+        if not resp["ok"]:
+            self.logger.error(resp)
+            raise RuntimeError('failed')
         return None
