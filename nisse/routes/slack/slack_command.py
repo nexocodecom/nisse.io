@@ -8,6 +8,7 @@ from flask_restful import Resource
 from nisse.models.slack.errors import Error
 from nisse.models.slack.message import Message
 from nisse.routes.slack.command_handlers.delete_time_command_handler import DeleteTimeCommandHandler
+from nisse.routes.slack.command_handlers.food_handler import FoodHandler
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
 from nisse.routes.slack.command_handlers.project_command_handler import ProjectCommandHandler
 from nisse.routes.slack.command_handlers.reminder_command_handler import ReminderCommandHandler
@@ -29,7 +30,8 @@ class SlackCommand(Resource):
                  show_help_handler: ShowHelpCommandHandler,
                  report_command_handler: ReportCommandHandler,
                  delete_time_command_handler: DeleteTimeCommandHandler,
-                 project_command_handler: ProjectCommandHandler):
+                 project_command_handler: ProjectCommandHandler,
+                 food_handler: FoodHandler):
         self.app = app
         self.set_reminder_handler = set_reminder_handler
         self.error_schema = Error.Schema()
@@ -42,6 +44,7 @@ class SlackCommand(Resource):
             'vacation': vacation_command_handler.dispatch_vacation,
             'reminder': set_reminder_handler.dispatch_reminder,
             'project': project_command_handler.dispatch_project_command,
+            'order':food_handler.order_start,
             'help': show_help_handler.create_help_command_message
         }
 
