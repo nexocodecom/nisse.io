@@ -45,6 +45,7 @@ class SlackCommand(Resource):
             'reminder': set_reminder_handler.dispatch_reminder,
             'project': project_command_handler.dispatch_project_command,
             'order':food_handler.order_start,
+            'checkout':food_handler.order_checkout,
             'help': show_help_handler.create_help_command_message
         }
 

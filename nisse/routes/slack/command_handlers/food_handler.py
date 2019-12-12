@@ -15,6 +15,9 @@ from nisse.services.reminder_service import ReminderService
 from nisse.services.user_service import UserService
 from nisse.utils import string_helper
 
+# cannot be less than 60 seconds: see 'Restrictions' in https://api.slack.com/methods/chat.deleteScheduledMessage
+REMINDER_IN = timedelta(seconds=80)
+
 
 class FoodHandler(SlackCommandHandler):
 
@@ -75,12 +78,12 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError("argument is required")
         ordering_link = arguments[0]
 
-        post_at: int = round((datetime.now() + timedelta(seconds=30)).timestamp())
+        post_at: int = round((datetime.now() + REMINDER_IN).timestamp())
         resp2 = self.slack_client.api_call(
             "chat.scheduleMessage",
             channel=command_body['channel_name'],
             post_at=post_at,
-            text="@" + command_body['user_name'] + " Looks like you forgot to order",
+            text="@{} Looks like you forgot to order from {}".format(command_body['user_name'], ordering_link),
             link_names=True
         )
         if not resp2["ok"]:
@@ -91,7 +94,9 @@ class FoodHandler(SlackCommandHandler):
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
             scheduled_message_id)
-        self.logger.info("Created order %d for user %s", order.food_order_id, command_body['user_name'])
+        self.logger.info(
+            "Created order %d for user %s with reminder %s",
+            order.food_order_id, command_body['user_name'], scheduled_message_id)
 
         resp = self.slack_client.api_call(
             "chat.postMessage",
@@ -115,3 +120,26 @@ class FoodHandler(SlackCommandHandler):
             self.logger.error(resp)
             raise RuntimeError('failed')
         return None
+
+    def order_checkout(self, command_body, arguments: list, action):
+        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+        reminder = self.food_order_service.checkout_order(user, datetime.today())
+        if not reminder:
+            self.logger.info('No reminder to cancel')
+            return
+
+        self.slack_client.api_call(
+            "chat.postMessage",
+            channel=command_body['channel_name'],
+            text="@{} checked out order".format(command_body['user_name'])
+        )
+        self.logger.debug('Canceling reminder %s', reminder)
+        resp = self.slack_client.api_call(
+            "chat.deleteScheduledMessage",
+            channel=command_body['channel_name'],
+            scheduled_message_id=reminder,
+        )
+        if not resp["ok"]:
+            self.logger.warning("Problem cancelling reminder '%s': %s", reminder, resp)
+        else:
+            self.logger.info('Cancelled reminder %s', reminder)
