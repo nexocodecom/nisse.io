@@ -48,16 +48,19 @@ class Dialog(object):
         submit_label = fields.String()
         callback_id = fields.String()
         elements = fields.List(fields.Nested(Element.Schema))
+        state = fields.String(missing=True)
 
         @post_load
         def make_obj(self, data):
             return Dialog(**data)
 
-    def __init__(self, title, submit_label, callback_id, elements):
+    def __init__(self, title, submit_label, callback_id, elements, state):
         self.title = title
         self.submit_label = submit_label
         self.callback_id = callback_id
         self.elements = elements
+        if state:
+            self.state = state
 
     def dump(self) -> Dict:
         return Dialog.Schema().dump(self).data

@@ -8,6 +8,7 @@ from slackclient import SlackClient
 from nisse.models.slack.dialog import Dialog, Element
 from nisse.models.slack.payload import Payload, FoodOrderPayload, FoodOrderFormPayload
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
+from nisse.services.food_order_service import FoodOrderService
 from nisse.services.project_service import ProjectService
 from nisse.services.reminder_service import ReminderService
 from nisse.services.user_service import UserService
@@ -19,7 +20,7 @@ class FoodHandler(SlackCommandHandler):
     @inject
     def __init__(self, config: Config, logger: logging.Logger, user_service: UserService,
                  slack_client: SlackClient, project_service: ProjectService,
-                 reminder_service: ReminderService):
+                 reminder_service: ReminderService, food_order_service: FoodOrderService):
         super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
 
     # handle button click
@@ -33,27 +34,36 @@ class FoodHandler(SlackCommandHandler):
             resp = self.slack_client.api_call(
                 "chat.postMessage",
                 channel = payload.channel.name,
-                text = payload.user.name + " zamówił " + payload.submission.ordered_item + "(" + payload.submission.ordered_item_price + "PLN)"
+                text = payload.user.name + " zamówił: " + payload.submission.ordered_item + " - " + payload.submission.ordered_item_price + "PLN"
             )
             if not resp["ok"]:
                 self.logger.error(resp)
             return False
 
-        if payload.actions['bar'].value == 'order':
-            elements = [
-                Element(label="Zamówienie", type="text", name='ordered_item', placeholder="Co zamawiasz?", value='ab'),
-                Element(label="Cena", type="text", name='ordered_item_price', placeholder="Cena", value='abc'),
-            ]
+        if payload.actions['bar'].value == 'pas':
+            resp = self.slack_client.api_call(
+                "chat.postMessage",
+                channel=payload.channel.name,
+                text=payload.user.name + " dzisiaj nie zamawia."
+            )
+            if not resp["ok"]:
+                self.logger.error(resp)
+        else:
+            order_id = payload.actions['bar']
 
+            elements = [
+                Element(label="Zamówienie", type="text", name='ordered_item', placeholder="Co zamawiasz?"),
+                Element(label="Cena", type="text", name='ordered_item_price', placeholder="Cena", value='0.0'),
+            ]
             dialog: Dialog = Dialog(title="Złóż zamówienie", submit_label="Zamawiam",
-                                callback_id=string_helper.get_full_class_name(FoodOrderFormPayload), elements=elements)
+                                callback_id=string_helper.get_full_class_name(FoodOrderFormPayload), elements=elements,
+                                state=order_id)
             resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog.dump())
             print(resp)
             if not resp["ok"]:
                 self.logger.error("Can't open dialog submit time: " + resp.get("error"))
             print("order")
-        elif payload.actions['bar'].value == 'pas':
-            print("pas")
+
         return False
 
     def create_dialog(self, command_body, argument, action) -> Dialog:
@@ -72,8 +82,8 @@ class FoodHandler(SlackCommandHandler):
                     "text": "@" + command_body['user_name'] + " orders from LINK",
                     "color": "#3AA3E3",
                     "actions": [
-                        {"name": "bar", "text": "I order", "type": "button", "value": "order"},
-                        {"name": "bar", "text": "Pas", "type": "button", "value": "pas"},
+                        {"name": "bar", "text": "Już zamawiam :)", "type": "button", "value": "omg-omg-omg"},
+                        {"name": "bar", "text": "Dziś nie zamawiam", "type": "button", "value": "pas"},
                     ]
                 }
             ]
