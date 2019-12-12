@@ -20,22 +20,21 @@ def upgrade():
     op.create_table('food_order',
     sa.Column('food_order_id', sa.Integer(), nullable=False),
     sa.Column('order_date', sa.Date(), nullable=True),
-    sa.Column('ordering_person', sa.Integer(), nullable=True),
-    sa.Column('duration', sa.DECIMAL(precision=18, scale=2), nullable=True),
+    sa.Column('ordering_user_id', sa.Integer(), nullable=True),
     sa.Column('link', sa.String(length=512), nullable=True),
-    sa.ForeignKeyConstraint(['ordering_person'], ['users.user_id'], ),
+    sa.ForeignKeyConstraint(['ordering_user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('food_order_id')
     )
     op.create_table('food_order_item',
     sa.Column('food_order_item_id', sa.Integer(), nullable=False),
-    sa.Column('food_irder_id', sa.Integer(), nullable=True),
-    sa.Column('eating_person', sa.Integer(), nullable=True),
+    sa.Column('food_order_id', sa.Integer(), nullable=True),
+    sa.Column('eating_user_id', sa.Integer(), nullable=True),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('cost', sa.DECIMAL(precision=18, scale=2), nullable=True),
     sa.Column('paid', sa.Boolean(), nullable=True),
     sa.Column('surrender', sa.Boolean(), nullable=True),
-    sa.ForeignKeyConstraint(['eating_person'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['food_irder_id'], ['food_order.food_order_id'], ),
+    sa.ForeignKeyConstraint(['eating_user_id'], ['users.user_id'], ),
+    sa.ForeignKeyConstraint(['food_order_id'], ['food_order.food_order_id'], ),
     sa.PrimaryKeyConstraint('food_order_item_id')
     )
 
