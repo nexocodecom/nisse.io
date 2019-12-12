@@ -1,4 +1,4 @@
-import datetime
+from datetime import date
 
 from flask_injector import inject
 from flask_sqlalchemy import SQLAlchemy
@@ -13,10 +13,11 @@ class FoodOrderService(object):
     def __init__(self, db: SQLAlchemy):
         self.db = db
 
-    def create_food_order(self, ordering_person: User, order_date: datetime, link: str):
+    def create_food_order(self, ordering_person: User, order_date: date, link: str, reminder: str):
         food_order = FoodOrder(ordering_user_id=ordering_person.user_id,
                                order_date=order_date,
-                               link=link)
+                               link=link,
+                               reminder=reminder)
         self.db.session.add(food_order)
         self.db.session.commit()
         return food_order

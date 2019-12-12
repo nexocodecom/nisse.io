@@ -103,6 +103,7 @@ class FoodOrder(Base):
     order_date = Column(Date)
     ordering_user_id = Column(Integer, ForeignKey('users.user_id'))
     link = Column(String(length=512))
+    reminder = Column(String(length=32))
 
 
 class FoodOrderItem(Base):
