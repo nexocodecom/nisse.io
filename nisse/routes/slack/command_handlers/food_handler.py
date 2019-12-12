@@ -21,7 +21,8 @@ class FoodHandler(SlackCommandHandler):
     @inject
     def __init__(self, config: Config, logger: logging.Logger, user_service: UserService,
                  slack_client: SlackClient, project_service: ProjectService,
-                 reminder_service: ReminderService, food_order_service: FoodOrderService):
+                 reminder_service: ReminderService,
+                 food_order_service: FoodOrderService):
         super().__init__(config, logger, user_service, slack_client, project_service, reminder_service)
         self.food_order_service = food_order_service
 
