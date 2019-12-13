@@ -79,7 +79,6 @@ class FoodHandler(SlackCommandHandler):
             print(resp)
             if not resp["ok"]:
                 self.logger.error("Can't open dialog submit time: " + resp.get("error"))
-            print("order")
         else:
             raise RuntimeError("Unsupported action for food order prompt")
 
@@ -179,3 +178,6 @@ class FoodHandler(SlackCommandHandler):
             self.logger.warning("Problem cancelling reminder '%s': %s", reminder, resp)
         else:
             self.logger.info('Cancelled reminder %s', reminder)
+
+    def show_debt(self, command_body, arguments: list, action):
+        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
