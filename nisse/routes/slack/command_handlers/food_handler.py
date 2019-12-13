@@ -190,7 +190,7 @@ class FoodHandler(SlackCommandHandler):
     def show_debt(self, command_body, arguments: list, action):
         print("Show debt")
         user = self.user_service.get_user_by_slack_id(command_body['user_id'])
-        debts = [UserDebt(2, 12.0), UserDebt(2, 11.00)]
+        debts = [UserDebt(2, 12.0), UserDebt(2, -11.00)]
         #debts = []
         if not debts:
             return 'You have no debts. Good for you.'
@@ -200,16 +200,23 @@ class FoodHandler(SlackCommandHandler):
             for debt in debts:
                 user = self.user_service.get_user_by_id(debt.user_id)
                 phone_text = ''
+
+                actions = []
+                text = "You owe " + str(debt.debt) +" PLN for " + user.first_name + " " + user.last_name + phone_text
+                if debt.debt <= 0:
+                    actions = [{"name": "debt-pay", "text": "I just paid " + str(-debt.debt) + " PLN", "type": "button","value": "pay-" + str(debt.user_id)}]
+                    text = "You owe " + str(-debt.debt) +" PLN for " + user.first_name + " " + user.last_name + phone_text
+                else:
+                    text = user.first_name + " " + user.last_name + " owes you " + str(debt.debt) +" PLN for "
+
                 if user.phone:
                     phone_text = "\nPay with BLIK using phone number: *" + user.phone + "*"
                 attachment = {
                             "callback_id": string_helper.get_full_class_name(FoodOrderPayload),
                             "attachment_type": "default",
-                            "text": "You owe " + str(debt.debt) +" PLN for " + user.first_name + " " + user.last_name + phone_text,
+                            "text": text,
                             "color": "#3AA3E3",
-                            "actions": [
-                                {"name": "debt-pay", "text": "I just paid " + str(debt.debt) + " PLN", "type": "button","value": "pay-" + str(debt.user_id)}
-                            ]
+                            "actions": actions
                          }
                 attachments.append(attachment)
 
