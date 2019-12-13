@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from pprint import pprint
 
 from flask.config import Config
 from flask_injector import inject
@@ -66,15 +65,12 @@ class FoodHandler(SlackCommandHandler):
             if not resp["ok"]:
                 self.logger.error(resp)
         elif payload.actions['order-prompt'].value.startswith('order-'):
-            order_id = payload.actions['order-prompt']
-
             elements = [
                 Element(label="Order", type="text", name='ordered_item', placeholder="What do you order?"),
                 Element(label="Price", type="text", name='ordered_item_price', placeholder="Price", value='0.00'),
             ]
             dialog: Dialog = Dialog(title="Place an order", submit_label="Order",
-                                callback_id=string_helper.get_full_class_name(FoodOrderFormPayload), elements=elements,
-                                state=order_id)
+                                callback_id=string_helper.get_full_class_name(FoodOrderFormPayload), elements=elements)
             resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog.dump())
             print(resp)
             if not resp["ok"]:
