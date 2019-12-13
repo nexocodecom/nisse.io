@@ -50,6 +50,9 @@ class User(Base):
     remind_time_sunday = Column(Time, nullable=True)
     phone = Column(String(length=15))
 
+    def __repr__(self):
+        return "User(id={},name={})".format(self.user_id, self.username)
+
 class UserRole(Base):
     __tablename__ = "user_roles"
 

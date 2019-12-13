@@ -3,7 +3,7 @@ from pprint import pprint
 
 from flask_injector import inject
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from typing import List
 
 from nisse.models.database import User, FoodOrder, FoodOrderItem
@@ -128,3 +128,24 @@ class FoodOrderService(object):
         for user_id in sorted(debts):
             result.append(UserDebt(user_id, debts[user_id]))
         return result
+
+    def pay_debts(self, paying_user: User, paid_user: User):
+        print("{} paying all debts to {}".format(paying_user, paid_user))
+        result = self.db.session.execute(
+            "UPDATE food_order_item i SET paid = 't' FROM food_order o "
+            "WHERE i.food_order_id=o.food_order_id "
+            "AND i.eating_user_id IN (:u1,:u2) AND o.ordering_user_id IN (:u1,:u2) "
+            "AND i.paid = 'f'",
+            {'u1': paying_user.user_id, 'u2': paid_user.user_id}
+        )
+        self.db.session.commit()
+        print("Paid {} debts".format(result.rowcount))
+
+    def top_debtors(self) -> List[UserDebt]:
+        return self.db.session.query(FoodOrderItem.eating_user_id, func.sum(FoodOrderItem.cost).label('debt')) \
+            .filter(FoodOrderItem.food_order_id == FoodOrder.food_order_id) \
+            .filter(FoodOrderItem.paid == 'f') \
+            .group_by(FoodOrderItem.eating_user_id) \
+            .order_by(desc('debt')) \
+            .limit(3) \
+            .all()
