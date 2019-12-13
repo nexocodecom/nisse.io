@@ -138,11 +138,13 @@ class FoodHandler(SlackCommandHandler):
         if len(arguments) == 0:
             return "Use format */ni order URL*"
         ordering_link = arguments[0]
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
 
         post_at: int = round((datetime.now() + CHECKOUT_REMINDER_IN).timestamp())
         resp2 = self.slack_client.api_call(
             "chat.scheduleMessage",
             channel=command_body['channel_name'],
+            user=user.slack_user_id,
             post_at=post_at,
             text="@{} Looks like you forgot to order from {}".format(command_body['user_name'], ordering_link),
             link_names=True
@@ -153,7 +155,7 @@ class FoodHandler(SlackCommandHandler):
         scheduled_message_id = resp2['scheduled_message_id']
 
         print("Scheduled message id", scheduled_message_id)
-        user = self.get_user_by_slack_user_id(command_body['user_id'])
+
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
             scheduled_message_id)
