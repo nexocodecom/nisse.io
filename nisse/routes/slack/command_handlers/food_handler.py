@@ -35,7 +35,7 @@ class FoodHandler(SlackCommandHandler):
         trigger_id = payload.trigger_id
 
         if payload.type == 'dialog_submission':
-            user = self.user_service.get_user_by_slack_id(payload.user.id)
+            user = self.get_user_by_slack_user_id(payload.user.id)
             order = self.food_order_service.get_order_by_date(user, datetime.today())
 
             if order is None:
@@ -55,7 +55,7 @@ class FoodHandler(SlackCommandHandler):
             return False
 
         if payload.actions['order-prompt'].value.startswith('pas-'):
-            user = self.user_service.get_user_by_slack_id(payload.user.id)
+            user = self.get_user_by_slack_user_id(payload.user.id)
             order_id = payload.actions['order-prompt'].value.replace("pas-","")
             self.food_order_service.skip_food_order_item(order_id, user)
             resp = self.slack_client.api_call(
@@ -105,7 +105,7 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError('failed')
         scheduled_message_id = resp2['scheduled_message_id']
 
-        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
             scheduled_message_id)
@@ -137,7 +137,7 @@ class FoodHandler(SlackCommandHandler):
         return None
 
     def order_checkout(self, command_body, arguments: list, action):
-        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
 
         reminder = self.food_order_service.checkout_order(user, datetime.today())
         if not reminder:
