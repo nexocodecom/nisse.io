@@ -157,7 +157,7 @@ class FoodHandler(SlackCommandHandler):
             channel=command_body['channel_name'],
             user=user.slack_user_id,
             post_at=post_at,
-            text="@{} Looks like you forgot to order from {}".format(command_body['user_name'], ordering_link),
+            text="@{} Looks like you forgot to checkout order from {}".format(command_body['user_name'], ordering_link),
             link_names=True
         )
         if not resp2["ok"]:
