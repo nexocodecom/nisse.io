@@ -26,12 +26,14 @@ class FoodOrderService(object):
 
     def create_food_order_item(self, order: FoodOrder, eating_person: User, desc: str,
                                cost: float=None) -> FoodOrderItem:
+        paid = order.ordering_user_id == eating_person.user_id
         self.remove_food_order_item(order.food_order_id, eating_person)
         food_order_item = FoodOrderItem(food_order_id=order.food_order_id,
                                         eating_user_id=eating_person.user_id,
                                         description=desc,
                                         surrender=False,
-                                        cost=cost)
+                                        cost=cost,
+                                        paid=paid)
         self.db.session.add(food_order_item)
         self.db.session.commit()
         return food_order_item

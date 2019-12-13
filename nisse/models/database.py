@@ -100,7 +100,7 @@ class FoodOrder(Base):
     __tablename__ = "food_order"
 
     food_order_id = Column(Integer, primary_key=True)
-    order_date = Column(Date)
+    order_date = Column(Date, nullable=False)
     ordering_user_id = Column(Integer, ForeignKey('users.user_id'))
     link = Column(String(length=512))
     reminder = Column(String(length=32))
@@ -113,9 +113,9 @@ class FoodOrderItem(Base):
     food_order_id = Column(Integer, ForeignKey('food_order.food_order_id'))
     eating_user_id = Column(Integer, ForeignKey('users.user_id'))
     description = Column(String(length=255))
-    cost = Column(DECIMAL(precision=18, scale=2))
-    paid = Column(Boolean)
-    surrender = Column(Boolean)
+    cost = Column(DECIMAL(precision=18, scale=2), nullable=False)
+    paid = Column(Boolean, nullable=False)
+    surrender = Column(Boolean, nullable=False)
 
 
 
