@@ -42,8 +42,9 @@ class FoodHandler(SlackCommandHandler):
             if order is None:
                 raise RuntimeError("Order not exists")
 
-            ordered_item = self.food_order_service.create_food_order_item(order, user, payload.submission.ordered_item,
-                                                                          float(payload.submission.ordered_item_price))
+            ordered_item = self.food_order_service.create_food_order_item(
+                order, user, payload.submission.ordered_item,
+                float(payload.submission.ordered_item_price.replace(",",".")))
             if ordered_item is None:
                 raise RuntimeError("Could not order meal")
 
@@ -293,7 +294,7 @@ class FoodHandler(SlackCommandHandler):
                     actions = [{"name": "debt-pay", "text": "I just paid " + str(-debt.debt) + " PLN", "type": "button","value": "pay-" + str(debt.user_id)}]
                     text = "You owe " + str(-debt.debt) +" PLN for " + get_user_name(user) + phone_text
                 elif debt.debt > 0:
-                    text = user.first_name + " " + user.last_name + " owes you " + str(debt.debt) +" PLN"
+                    text = get_user_name(user) + " owes you " + str(debt.debt) +" PLN"
 
 
                 attachment = {
