@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from pprint import pprint
 
 from flask.config import Config
 from flask_injector import inject
@@ -18,7 +17,7 @@ from nisse.services.user_service import UserService
 from nisse.utils import string_helper
 
 # cannot be less than 60 seconds: see 'Restrictions' in https://api.slack.com/methods/chat.deleteScheduledMessage
-REMINDER_IN = timedelta(seconds=80)
+CHECKOUT_REMINDER_IN = timedelta(minutes=4)
 
 
 class FoodHandler(SlackCommandHandler):
@@ -36,7 +35,7 @@ class FoodHandler(SlackCommandHandler):
         trigger_id = payload.trigger_id
 
         if payload.type == 'dialog_submission':
-            user = self.user_service.get_user_by_slack_id(payload.user.id)
+            user = self.get_user_by_slack_user_id(payload.user.id)
             order = self.food_order_service.get_order_by_date(user, datetime.today())
 
             if order is None:
@@ -58,7 +57,7 @@ class FoodHandler(SlackCommandHandler):
             return False
 
         if 'order-prompt' in payload.actions and payload.actions['order-prompt'].value.startswith('pas-'):
-            user = self.user_service.get_user_by_slack_id(payload.user.id)
+            user = self.get_user_by_slack_user_id(payload.user.id)
             order_id = payload.actions['order-prompt'].value.replace("pas-", "")
             self.food_order_service.skip_food_order_item(order_id, user)
             resp = self.slack_client.api_call(
@@ -69,16 +68,13 @@ class FoodHandler(SlackCommandHandler):
             if not resp["ok"]:
                 self.logger.error(resp)
         elif 'order-prompt' in payload.actions and payload.actions['order-prompt'].value.startswith('order-'):
-            order_id = payload.actions['order-prompt']
-
             elements = [
                 Element(label="Order", type="text", name='ordered_item', placeholder="What do you order?"),
                 Element(label="Price", type="text", name='ordered_item_price', placeholder="Price", value='0.00'),
             ]
             dialog: Dialog = Dialog(title="Place an order", submit_label="Order",
                                     callback_id=string_helper.get_full_class_name(FoodOrderFormPayload),
-                                    elements=elements,
-                                    state=order_id)
+                                    elements=elements)
             resp = self.slack_client.api_call("dialog.open", trigger_id=trigger_id, dialog=dialog.dump())
             print(resp)
             if not resp["ok"]:
@@ -101,7 +97,7 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError("argument is required")
         ordering_link = arguments[0]
 
-        post_at: int = round((datetime.now() + REMINDER_IN).timestamp())
+        post_at: int = round((datetime.now() + CHECKOUT_REMINDER_IN).timestamp())
         resp2 = self.slack_client.api_call(
             "chat.scheduleMessage",
             channel=command_body['channel_name'],
@@ -114,7 +110,7 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError('failed')
         scheduled_message_id = resp2['scheduled_message_id']
 
-        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
             scheduled_message_id)
@@ -148,7 +144,7 @@ class FoodHandler(SlackCommandHandler):
         return None
 
     def order_checkout(self, command_body, arguments: list, action):
-        user = self.user_service.get_user_by_slack_id(command_body['user_id'])
+        user = self.get_user_by_slack_user_id(command_body['user_id'])
 
         reminder = self.food_order_service.checkout_order(user, datetime.today())
         if not reminder:
