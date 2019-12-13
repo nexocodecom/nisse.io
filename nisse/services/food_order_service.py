@@ -3,8 +3,11 @@ from pprint import pprint
 
 from flask_injector import inject
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
+from typing import List
 
 from nisse.models.database import User, FoodOrder, FoodOrderItem
+from nisse.models.slack.food import UserDebt
 
 
 class FoodOrderService(object):
@@ -94,3 +97,27 @@ class FoodOrderService(object):
         date_str = order_date.isoformat()
         return self.db.session.query(FoodOrder) \
             .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id)[-1]
+
+    def get_debt(self, person: User) -> List[UserDebt]:
+        owing_to = self.db.session.query(FoodOrder.ordering_user_id, func.sum(FoodOrderItem.cost).label('debt')) \
+            .filter(FoodOrderItem.eating_user_id == person.user_id) \
+            .filter(FoodOrderItem.food_order_id == FoodOrder.food_order_id) \
+            .filter(FoodOrderItem.paid == 'f') \
+            .group_by(FoodOrder.ordering_user_id) \
+            .all()
+        owing_me = self.db.session.query(FoodOrderItem.eating_user_id, func.sum(FoodOrderItem.cost).label('debt')) \
+            .filter(FoodOrder.ordering_user_id == person.user_id) \
+            .filter(FoodOrderItem.food_order_id == FoodOrder.food_order_id) \
+            .filter(FoodOrderItem.paid == 'f') \
+            .group_by(FoodOrderItem.eating_user_id) \
+            .all()
+        debts = {}
+        for debt in owing_me:
+            debts[debt[0]] = debt[1]
+        for debt in owing_to:
+            debts.setdefault(debt[0], 0)
+            debts[debt[0]] -= debt[1]
+        result: List[UserDebt] = []
+        for user_id in sorted(debts):
+            result.append(UserDebt(user_id, debts[user_id]))
+        return result
