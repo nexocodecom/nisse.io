@@ -67,7 +67,9 @@ class FoodOrderService(object):
         if removed_orders:
             for removed_order in removed_orders:
                 self.remove_food_order_item_for_order(removed_order)
+                self.db.session.commit()
                 self.db.session.delete(removed_order)
+                self.db.session.commit()
 
     def remove_food_order_item(self, food_order_id: str, eating_person: User):
         overriden_order_item: FoodOrderItem = self.db.session.query(FoodOrderItem) \
@@ -76,10 +78,12 @@ class FoodOrderService(object):
             .first()
         if overriden_order_item is not None:
             self.db.session.delete(overriden_order_item)
+            self.db.session.commit()
 
     def remove_food_order_item_for_order(self, removed_order: FoodOrder):
         removed_order_items: [FoodOrderItem] = self.db.session.query(FoodOrderItem) \
             .filter(FoodOrderItem.food_order_id == removed_order.food_order_id)
+        print("Removing orders: ", removed_order_items)
         if removed_order_items:
             for removed_order_item in removed_order_items:
                 self.db.session.delete(removed_order_item)
