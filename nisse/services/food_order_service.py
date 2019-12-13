@@ -96,7 +96,14 @@ class FoodOrderService(object):
     def get_order_by_date(self, ordering_person: User, order_date: date):
         date_str = order_date.isoformat()
         return self.db.session.query(FoodOrder) \
-            .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id)[-1]
+            .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id) \
+            .order_by(FoodOrder.food_order_id.desc())[-1]
+
+    def get_order_by_date_only(self, order_date: date):
+        date_str = order_date.isoformat()
+        return self.db.session.query(FoodOrder) \
+            .filter(FoodOrder.order_date == date_str) \
+            .order_by(FoodOrder.food_order_id.desc())[-1]
 
     def get_debt(self, person: User) -> List[UserDebt]:
         owing_to = self.db.session.query(FoodOrder.ordering_user_id, func.sum(FoodOrderItem.cost).label('debt')) \
