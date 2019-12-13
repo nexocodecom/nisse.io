@@ -261,7 +261,7 @@ class FoodHandler(SlackCommandHandler):
     def show_debt(self, command_body, arguments: list, action):
         print("Show debt")
         requesting_user = self.user_service.get_user_by_slack_id(command_body['user_id'])
-        debts = self.food_order_service.get_debt(requesting_user)
+        debts = list(filter(lambda d: d.debt != 0, self.food_order_service.get_debt(requesting_user)))
 
         if not debts:
             self.slack_client.api_call(
@@ -289,10 +289,10 @@ class FoodHandler(SlackCommandHandler):
                     phone_text = "\nPay with BLIK using phone number: *" + user.phone + "*"
                 actions = []
                 text = "You owe " + str(debt.debt) +" PLN for " + get_user_name(user) + phone_text
-                if debt.debt <= 0:
+                if debt.debt < 0:
                     actions = [{"name": "debt-pay", "text": "I just paid " + str(-debt.debt) + " PLN", "type": "button","value": "pay-" + str(debt.user_id)}]
                     text = "You owe " + str(-debt.debt) +" PLN for " + get_user_name(user) + phone_text
-                else:
+                elif debt.debt > 0:
                     text = user.first_name + " " + user.last_name + " owes you " + str(debt.debt) +" PLN"
 
 
