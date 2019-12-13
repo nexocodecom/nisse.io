@@ -318,3 +318,21 @@ class FoodHandler(SlackCommandHandler):
                 print(resp)
                 raise RuntimeError('failed')
             return None
+
+    def show_debtors(self, command_body, arguments: list, action):
+        debtors_str = ''
+        debtors = self.food_order_service.top_debtors()
+        for debtor in debtors:
+            debtors_str += "{} has total debt {} PLN\n".format(get_user_name(self.user_service.get_user_by_id(debtor[0])), debtor[1])
+        self.slack_client.api_call(
+            "chat.postMessage",
+            channel=command_body['channel_name'],
+            mrkdwn=True,
+            attachments=[
+                {
+                    "attachment_type": "default",
+                    "text": str("Top debtors are:\n" + debtors_str),
+                    "color": "#ec4444",
+                }
+            ]
+        )

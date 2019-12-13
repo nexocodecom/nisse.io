@@ -142,7 +142,7 @@ class FoodOrderService(object):
         self.db.session.commit()
         print("Paid {} debts".format(result.rowcount))
 
-    def top_debtors(self) -> List[UserDebt]:
+    def top_debtors(self):
         return self.db.session.query(FoodOrderItem.eating_user_id, func.sum(FoodOrderItem.cost).label('debt')) \
             .filter(FoodOrderItem.food_order_id == FoodOrder.food_order_id) \
             .filter(FoodOrderItem.paid == 'f') \

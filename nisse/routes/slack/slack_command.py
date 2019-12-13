@@ -47,6 +47,7 @@ class SlackCommand(Resource):
             'order':food_handler.order_start,
             'checkout':food_handler.order_checkout,
             'pay':food_handler.show_debt,
+            'debt':food_handler.show_debtors,
             'help': show_help_handler.create_help_command_message
         }
 
