@@ -66,8 +66,7 @@ class SubmitTimeCommandHandler(SlackCommandHandler):
             Element("Note", "textarea", "comment", None,
                     None, None, "Provide short description")
         ]
-        return Dialog("Submitting time", "Submit", string_helper.get_full_class_name(TimeReportingFormPayload),
-                      elements)
+        return Dialog("Submitting time", "Submit", string_helper.get_full_class_name(TimeReportingFormPayload), elements)
 
     @staticmethod
     def get_duration_hours():
