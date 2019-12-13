@@ -20,8 +20,6 @@ class FoodOrderService(object):
                                link=link,
                                reminder=reminder)
 
-        self.remove_food_order(order_date)
-
         self.db.session.add(food_order)
         self.db.session.commit()
         return food_order
@@ -59,18 +57,6 @@ class FoodOrderService(object):
             .filter(FoodOrderItem.food_order_id == order.food_order_id)
 
 
-    def remove_food_order(self, order_date: date):
-        date_str = order_date.isoformat()
-        removed_orders: [FoodOrder]= self.db.session.query(FoodOrder) \
-            .filter(FoodOrder.order_date == date_str)
-
-        if removed_orders:
-            for removed_order in removed_orders:
-                self.remove_food_order_item_for_order(removed_order)
-                self.db.session.commit()
-                self.db.session.delete(removed_order)
-                self.db.session.commit()
-
     def remove_food_order_item(self, food_order_id: str, eating_person: User):
         overriden_order_item: FoodOrderItem = self.db.session.query(FoodOrderItem) \
             .filter(FoodOrderItem.eating_user_id == eating_person.user_id) \
@@ -105,5 +91,4 @@ class FoodOrderService(object):
     def get_order_by_date(self, ordering_person: User, order_date: date):
         date_str = order_date.isoformat()
         return self.db.session.query(FoodOrder) \
-            .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id). \
-            first()
+            .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id)[-1]

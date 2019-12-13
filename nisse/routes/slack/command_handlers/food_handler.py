@@ -140,6 +140,16 @@ class FoodHandler(SlackCommandHandler):
     def order_checkout(self, command_body, arguments: list, action):
         user = self.user_service.get_user_by_slack_id(command_body['user_id'])
 
+        reminder = self.food_order_service.checkout_order(user, datetime.today())
+        if not reminder:
+            self.logger.warning('Already checked out')
+            self.slack_client.api_call(
+                "chat.postMessage",
+                channel=command_body['channel_name'],
+                text='Already checked out'
+            )
+            return
+
         order_items: [FoodOrderItem] = self.food_order_service.get_food_order_items_by_date(user, datetime.today())
         order_items_text = ''
         if order_items:
@@ -158,11 +168,6 @@ class FoodHandler(SlackCommandHandler):
                 channel=command_body['channel_name'],
                 text=("@{} checked out order\nSummary:\n"+order_items_text).format(command_body['user_name'])
             )
-
-        reminder = self.food_order_service.checkout_order(user, datetime.today())
-        if not reminder:
-            self.logger.info('No reminder to cancel')
-            return
 
         self.logger.debug('Canceling reminder %s', reminder)
         resp = self.slack_client.api_call(
