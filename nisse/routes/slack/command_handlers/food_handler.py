@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from pprint import pprint
 
 from flask.config import Config
 from flask_injector import inject
@@ -8,7 +7,6 @@ from slackclient import SlackClient
 
 from nisse.models import FoodOrderItem
 from nisse.models.slack.dialog import Dialog, Element
-from nisse.models.slack.food import UserDebt
 from nisse.models.slack.payload import Payload, FoodOrderPayload, FoodOrderFormPayload
 from nisse.routes.slack.command_handlers.slack_command_handler import SlackCommandHandler
 from nisse.services.food_order_service import FoodOrderService
@@ -20,7 +18,7 @@ from nisse.utils import string_helper
 # cannot be less than 60 seconds: see 'Restrictions' in https://api.slack.com/methods/chat.deleteScheduledMessage
 from nisse.utils.string_helper import get_user_name
 
-CHECKOUT_REMINDER_IN = timedelta(minutes=4)
+CHECKOUT_REMINDER_IN = timedelta(seconds=10)
 
 
 class FoodHandler(SlackCommandHandler):
@@ -63,13 +61,25 @@ class FoodHandler(SlackCommandHandler):
             user = self.get_user_by_slack_user_id(payload.user.id)
             order_id = payload.actions['order-prompt'].value.replace("pas-", "")
             self.food_order_service.skip_food_order_item(order_id, user)
-            resp = self.slack_client.api_call(
-                "chat.postMessage",
-                channel=payload.channel.name,
-                text=payload.user.name + " is not ordering today."
-            )
-            if not resp["ok"]:
-                self.logger.error(resp)
+
+            order = self.food_order_service.get_order_by_date_only(datetime.today())
+            user = self.get_user_by_slack_user_id(payload.user.id)
+            if order.reminder is None or order.reminder == '':
+                self.slack_client.api_call(
+                    "chat.postEphemeral",
+                    user=user.slack_user_id,
+                    channel=payload.channel.name,
+                    text="Ordering is closed for today. Try tomorrow :relieved:"
+                )
+            else:
+                resp = self.slack_client.api_call(
+                    "chat.postMessage",
+                    channel=payload.channel.name,
+                    text=payload.user.name + " is not ordering today."
+                )
+                if not resp["ok"]:
+                    self.logger.error(resp)
+
         elif 'order-prompt' in payload.actions and payload.actions['order-prompt'].value.startswith('order-'):
             elements = [
                 Element(label="Order", type="text", name='ordered_item', placeholder="What do you order?"),
@@ -80,7 +90,6 @@ class FoodHandler(SlackCommandHandler):
                                     elements=elements)
             order = self.food_order_service.get_order_by_date_only(datetime.today())
             user = self.get_user_by_slack_user_id(payload.user.id)
-            pprint(vars(order))
             if order.reminder is None or order.reminder == '':
                 self.slack_client.api_call(
                     "chat.postEphemeral",
@@ -95,6 +104,8 @@ class FoodHandler(SlackCommandHandler):
         elif 'debt-pay' in payload.actions and payload.actions['debt-pay'].value.startswith('pay-'):
             settled_user = self.user_service.get_user_by_id(payload.actions['debt-pay'].value.replace("pay-", ""))
             user = self.user_service.get_user_by_slack_id(payload.user.id)
+
+            self.food_order_service.pay_debts(user, settled_user)
 
             self.slack_client.api_call(
                 "chat.postEphemeral",
@@ -208,18 +219,32 @@ class FoodHandler(SlackCommandHandler):
                 eating_user = self.user_service.get_user_by_id(order_item.eating_user_id)
                 order_items_text += get_user_name(eating_user) + " - " + order_item.description + " (" + str(
                     order_item.cost) + " PLN)\n"
-        # TODO use user.name instead of eating_user_id
+
         if order_items_text == '':
             self.slack_client.api_call(
                 "chat.postMessage",
                 channel=command_body['channel_name'],
-                text="*{} checked out order. No orders for today.*".format(get_user_name(user))
+                mrkdwn=True,
+                attachments=[
+                    {
+                        "attachment_type": "default",
+                        "text": str("*{} checked out order. No orders for today.*".format(get_user_name(user))),
+                        "color": "#3AA3E3"
+                    }
+                ]
             )
         else:
             self.slack_client.api_call(
                 "chat.postMessage",
                 channel=command_body['channel_name'],
-                text=("*{} checked out order:*\n" + order_items_text).format(get_user_name(user))
+                mrkdwn=True,
+                attachments=[
+                    {
+                        "attachment_type": "default",
+                        "text": str("*{} checked out order:*\n" + order_items_text).format(get_user_name(user)),
+                        "color": "#3AA3E3"
+                    }
+                ]
             )
 
         self.logger.debug('Canceling reminder %s', reminder)
@@ -239,7 +264,20 @@ class FoodHandler(SlackCommandHandler):
         debts = self.food_order_service.get_debt(requesting_user)
 
         if not debts:
-            return 'You have no debts. Good for you.'
+            self.slack_client.api_call(
+                "chat.postEphemeral",
+                channel=command_body['channel_name'],
+                user=requesting_user.slack_user_id,
+                mrkdwn=True,
+                as_user=True,
+                attachments=[
+                    {
+                        "attachment_type": "default",
+                        "text": "You have no debts. Good for you :raised_hands:",
+                        "color": "#3AA3E3"
+                    }
+                ]
+            )
         else:
             attachments = []
 

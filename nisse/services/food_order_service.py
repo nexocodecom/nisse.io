@@ -48,7 +48,8 @@ class FoodOrderService(object):
                                         eating_user_id=eating_person.user_id,
                                         description='',
                                         surrender=True,
-                                        cost=0.0)
+                                        cost=0.0,
+                                        paid=True)
         self.db.session.add(food_order_item)
         self.db.session.commit()
         return food_order_item
