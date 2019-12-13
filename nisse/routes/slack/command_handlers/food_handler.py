@@ -16,7 +16,7 @@ from nisse.services.user_service import UserService
 from nisse.utils import string_helper
 
 # cannot be less than 60 seconds: see 'Restrictions' in https://api.slack.com/methods/chat.deleteScheduledMessage
-REMINDER_IN = timedelta(seconds=80)
+CHECKOUT_REMINDER_IN = timedelta(minutes=4)
 
 
 class FoodHandler(SlackCommandHandler):
@@ -88,7 +88,7 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError("argument is required")
         ordering_link = arguments[0]
 
-        post_at: int = round((datetime.now() + REMINDER_IN).timestamp())
+        post_at: int = round((datetime.now() + CHECKOUT_REMINDER_IN).timestamp())
         resp2 = self.slack_client.api_call(
             "chat.scheduleMessage",
             channel=command_body['channel_name'],
