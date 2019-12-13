@@ -48,6 +48,7 @@ class User(Base):
     remind_time_friday = Column(Time, nullable=True)
     remind_time_saturday = Column(Time, nullable=True)
     remind_time_sunday = Column(Time, nullable=True)
+    phone = Column(String(length=15))
 
 class UserRole(Base):
     __tablename__ = "user_roles"
