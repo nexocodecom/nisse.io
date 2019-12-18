@@ -15,10 +15,10 @@ from nisse.services.reminder_service import ReminderService
 from nisse.services.user_service import UserService
 from nisse.utils import string_helper
 
-# cannot be less than 60 seconds: see 'Restrictions' in https://api.slack.com/methods/chat.deleteScheduledMessage
 from nisse.utils.string_helper import get_user_name
 
-CHECKOUT_REMINDER_IN = timedelta(seconds=10)
+# cannot be less than 60 seconds: see 'Restrictions' in https://api.slack.com/methods/chat.deleteScheduledMessage
+CHECKOUT_REMINDER_IN = timedelta(minutes=15)
 
 
 class FoodHandler(SlackCommandHandler):
