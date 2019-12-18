@@ -60,7 +60,8 @@ class FoodOrderService(object):
             return None
 
         return self.db.session.query(FoodOrderItem) \
-            .filter(FoodOrderItem.food_order_id == order.food_order_id)
+            .filter(FoodOrderItem.food_order_id == order.food_order_id) \
+            .filter(FoodOrderItem.cost != 0)
 
 
     def remove_food_order_item(self, food_order_id: str, eating_person: User):
