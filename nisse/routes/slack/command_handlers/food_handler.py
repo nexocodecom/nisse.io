@@ -37,7 +37,7 @@ class FoodHandler(SlackCommandHandler):
 
         if payload.type == 'dialog_submission':
             user = self.get_user_by_slack_user_id(payload.user.id)
-            order = self.food_order_service.get_order_by_date(user, datetime.today())
+            order = self.food_order_service.get_order_by_date_and_channel(datetime.today(), payload.channel.name)
 
             if order is None:
                 raise RuntimeError("Order not exists")
@@ -51,7 +51,7 @@ class FoodHandler(SlackCommandHandler):
             resp = self.slack_client.api_call(
                 "chat.postMessage",
                 channel=payload.channel.name,
-                text=get_user_name(user) + " ordered: " + ordered_item.description + " - " + str(
+                text=get_user_name(user) + " ordered: " + ordered_item.description + " for " + str(
                     ordered_item.cost) + "PLN"
             )
             if not resp["ok"]:
@@ -63,9 +63,9 @@ class FoodHandler(SlackCommandHandler):
             order_id = payload.actions['order-prompt'].value.replace("pas-", "")
             self.food_order_service.skip_food_order_item(order_id, user)
 
-            order = self.food_order_service.get_order_by_date_only(datetime.today())
+            order = self.food_order_service.get_order_by_date_and_channel(datetime.today(), payload.channel.name)
             user = self.get_user_by_slack_user_id(payload.user.id)
-            if order.reminder is None or order.reminder == '':
+            if order is None or order.reminder is None or order.reminder == '':
                 self.slack_client.api_call(
                     "chat.postEphemeral",
                     user=user.slack_user_id,
@@ -89,9 +89,9 @@ class FoodHandler(SlackCommandHandler):
             dialog: Dialog = Dialog(title="Place an order", submit_label="Order",
                                     callback_id=string_helper.get_full_class_name(FoodOrderFormPayload),
                                     elements=elements)
-            order = self.food_order_service.get_order_by_date_only(datetime.today())
+            order = self.food_order_service.get_order_by_date_and_channel(datetime.today(), payload.channel.name)
             user = self.get_user_by_slack_user_id(payload.user.id)
-            if order.reminder is None or order.reminder == '':
+            if order is None or order.reminder is None or order.reminder == '':
                 self.slack_client.api_call(
                     "chat.postEphemeral",
                     user=user.slack_user_id,
@@ -166,11 +166,10 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError('failed')
         scheduled_message_id = resp2['scheduled_message_id']
 
-        print("Scheduled message id", scheduled_message_id)
-
+        print("created order by : " + str(user.user_id)) #todo wojtek
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
-            scheduled_message_id)
+            scheduled_message_id, command_body['channel_name'])
         self.logger.info(
             "Created order %d for user %s with reminder %s",
             order.food_order_id, command_body['user_name'], scheduled_message_id)
@@ -203,17 +202,20 @@ class FoodHandler(SlackCommandHandler):
     def order_checkout(self, command_body, arguments: list, action):
         user = self.get_user_by_slack_user_id(command_body['user_id'])
 
-        reminder = self.food_order_service.checkout_order(user, datetime.today())
+        print("checked out user: " + str(user.user_id))
+
+        reminder = self.food_order_service.checkout_order(user, datetime.today(), command_body['channel_name'])
         if not reminder:
-            self.logger.warning('Already checked out')
+            self.logger.warning("User {} can't check out order for this channel".format(user.username))
             self.slack_client.api_call(
-                "chat.postMessage",
+                "chat.postEphemeral",
                 channel=command_body['channel_name'],
-                text='Already checked out'
+                user=user.slack_user_id,
+                text="You can't check out order for this channel. Are you order owner?"
             )
             return
 
-        order_items: [FoodOrderItem] = self.food_order_service.get_food_order_items_by_date(user, datetime.today())
+        order_items: [FoodOrderItem] = self.food_order_service.get_food_order_items_by_date(user, datetime.today(), command_body['channel_name'])
         order_items_text = ''
         if order_items:
             for order_item in order_items:

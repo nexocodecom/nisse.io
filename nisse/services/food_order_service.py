@@ -1,5 +1,4 @@
 from datetime import date
-from pprint import pprint
 
 from flask_injector import inject
 from flask_sqlalchemy import SQLAlchemy
@@ -17,11 +16,12 @@ class FoodOrderService(object):
     def __init__(self, db: SQLAlchemy):
         self.db = db
 
-    def create_food_order(self, ordering_person: User, order_date: date, link: str, reminder: str) -> FoodOrder:
+    def create_food_order(self, ordering_person: User, order_date: date, link: str, reminder: str, channel_name: str) -> FoodOrder:
         food_order = FoodOrder(ordering_user_id=ordering_person.user_id,
                                order_date=order_date,
                                link=link,
-                               reminder=reminder)
+                               reminder=reminder,
+                               channel_name=channel_name)
 
         self.db.session.add(food_order)
         self.db.session.commit()
@@ -54,8 +54,8 @@ class FoodOrderService(object):
         self.db.session.commit()
         return food_order_item
 
-    def get_food_order_items_by_date(self, ordering_person: User, order_date: date):
-        order = self.get_order_by_date(ordering_person, order_date)
+    def get_food_order_items_by_date(self, ordering_person: User, order_date: date, channel_name: str):
+        order = self.get_owned_order_by_date_and_channel(ordering_person, order_date, channel_name)
         if not order:
             return None
 
@@ -82,30 +82,42 @@ class FoodOrderService(object):
                 self.db.session.delete(removed_order_item)
 
 
-    def checkout_order(self, ordering_person: User, order_date: date):
-        original = self.get_order_by_date(ordering_person, order_date)
+    def checkout_order(self, ordering_person: User, order_date: date, channel_name: str):
+        original = self.get_owned_order_by_date_and_channel(ordering_person, order_date, channel_name)
         if not original:
             return None
 
         date_str = order_date.isoformat()
         reminder = original.reminder
+
         self.db.session.query(FoodOrder) \
-            .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id). \
-            update({FoodOrder.reminder: ""})
+            .filter(FoodOrder.order_date == date_str) \
+            .filter(FoodOrder.ordering_user_id == ordering_person.user_id) \
+            .filter(FoodOrder.channel_name == channel_name) \
+            .update({FoodOrder.reminder: ""})
         self.db.session.commit()
         return reminder
 
-    def get_order_by_date(self, ordering_person: User, order_date: date):
+    def get_owned_order_by_date_and_channel(self, ordering_person: User, order_date: date, channel_name: str):
         date_str = order_date.isoformat()
-        return self.db.session.query(FoodOrder) \
-            .filter(FoodOrder.order_date == date_str and FoodOrder.ordering_user_id == ordering_person.user_id) \
-            .order_by(FoodOrder.food_order_id.asc())[-1]
+        try:
+            return self.db.session.query(FoodOrder) \
+                .filter(FoodOrder.order_date == date_str) \
+                .filter(FoodOrder.ordering_user_id == ordering_person.user_id) \
+                .filter(FoodOrder.channel_name == channel_name) \
+                .order_by(FoodOrder.food_order_id.asc())[-1]
+        except IndexError:
+            return None
 
-    def get_order_by_date_only(self, order_date: date):
+    def get_order_by_date_and_channel(self, order_date: date, channel_name: str):
         date_str = order_date.isoformat()
-        return self.db.session.query(FoodOrder) \
-            .filter(FoodOrder.order_date == date_str) \
-            .order_by(FoodOrder.food_order_id.asc())[-1]
+        try:
+            return self.db.session.query(FoodOrder) \
+                .filter(FoodOrder.order_date == date_str) \
+                .filter(FoodOrder.channel_name == channel_name) \
+                .order_by(FoodOrder.food_order_id.asc())[-1]
+        except IndexError:
+            return None
 
     def get_debt(self, person: User) -> List[UserDebt]:
         owing_to = self.db.session.query(FoodOrder.ordering_user_id, func.sum(FoodOrderItem.cost).label('debt')) \

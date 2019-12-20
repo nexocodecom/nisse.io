@@ -108,6 +108,7 @@ class FoodOrder(Base):
     ordering_user_id = Column(Integer, ForeignKey('users.user_id'))
     link = Column(String(length=512))
     reminder = Column(String(length=32))
+    channel_name = Column(String(length=24), nullable=False)
 
 
 class FoodOrderItem(Base):
