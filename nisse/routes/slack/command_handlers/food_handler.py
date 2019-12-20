@@ -148,7 +148,7 @@ class FoodHandler(SlackCommandHandler):
 
     def order_start(self, command_body, arguments: list, action):
         if len(arguments) == 0:
-            return "Use format */ni order URL*"
+            return "Use format: */ni order _URL_*"
         ordering_link = arguments[0]
         user = self.get_user_by_slack_user_id(command_body['user_id'])
 

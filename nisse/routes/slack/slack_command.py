@@ -44,8 +44,8 @@ class SlackCommand(Resource):
             'vacation': vacation_command_handler.dispatch_vacation,
             'reminder': set_reminder_handler.dispatch_reminder,
             'project': project_command_handler.dispatch_project_command,
-            'order':food_handler.order_start,
-            'checkout':food_handler.order_checkout,
+            'food':food_handler.order_start,
+            'order':food_handler.order_checkout,
             'pay':food_handler.show_debt,
             'debt':food_handler.show_debtors,
             'help': show_help_handler.create_help_command_message
