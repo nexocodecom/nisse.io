@@ -1,5 +1,4 @@
 from datetime import date
-
 from flask_injector import inject
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, desc
@@ -65,12 +64,20 @@ class FoodOrderService(object):
 
 
     def remove_food_order_item(self, food_order_id: str, eating_person: User):
-        overriden_order_item: FoodOrderItem = self.db.session.query(FoodOrderItem) \
+        removed_item: FoodOrderItem = self.db.session.query(FoodOrderItem) \
             .filter(FoodOrderItem.eating_user_id == eating_person.user_id) \
             .filter(FoodOrderItem.food_order_id == food_order_id) \
             .first()
-        if overriden_order_item is not None:
-            self.db.session.delete(overriden_order_item)
+        if removed_item is not None:
+            self.db.session.delete(removed_item)
+            self.db.session.commit()
+
+    def remove_all_items_for_order(self, food_order_id: str):
+        removed_item: FoodOrderItem = self.db.session.query(FoodOrderItem) \
+            .filter(FoodOrderItem.food_order_id == food_order_id) \
+            .first()
+        if removed_item is not None:
+            self.db.session.delete(removed_item)
             self.db.session.commit()
 
     def remove_food_order_item_for_order(self, removed_order: FoodOrder):
@@ -110,12 +117,8 @@ class FoodOrderService(object):
             return None
 
     def get_order_by_date_and_channel(self, order_date: date, channel_name: str):
-        date_str = order_date.isoformat()
         try:
-            return self.db.session.query(FoodOrder) \
-                .filter(FoodOrder.order_date == date_str) \
-                .filter(FoodOrder.channel_name == channel_name) \
-                .order_by(FoodOrder.food_order_id.asc())[-1]
+            return self.get_all_pending_orders_by_date_and_channel(order_date, channel_name)[-1]
         except IndexError:
             return None
 
@@ -163,3 +166,19 @@ class FoodOrderService(object):
             .order_by(desc('debt')) \
             .limit(3) \
             .all()
+
+    def mark_incomplete_food_order_items(self, order_date: date, channel_name: str):
+        pending_orders = self.get_all_pending_orders_by_date_and_channel(order_date, channel_name)
+        if not pending_orders:
+            return
+        for order in pending_orders:
+            self.remove_all_items_for_order(order.food_order_id)
+
+    def get_all_pending_orders_by_date_and_channel(self, order_date: date, channel_name: str):
+            date_str = order_date.isoformat()
+            return self.db.session.query(FoodOrder) \
+                .filter(FoodOrder.order_date == date_str) \
+                .filter(FoodOrder.channel_name == channel_name) \
+                .filter(FoodOrder.reminder.isnot(None)) \
+                .order_by(FoodOrder.food_order_id.asc()) \
+                .all()

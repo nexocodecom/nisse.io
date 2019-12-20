@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 from flask.config import Config
 from flask_injector import inject
@@ -117,7 +118,7 @@ class FoodHandler(SlackCommandHandler):
                 attachments=[
                     {
                         "attachment_type": "default",
-                        "text": "You just paid for {} :tada:".format(get_user_name(settled_user)),
+                        "text": "Lannisters always pay their debts. Glad that you too {} :tada:".format(get_user_name(settled_user)),
                         "color": "#3AA3E3"
                     }
                 ]
@@ -152,13 +153,15 @@ class FoodHandler(SlackCommandHandler):
         ordering_link = arguments[0]
         user = self.get_user_by_slack_user_id(command_body['user_id'])
 
+        self.food_order_service.mark_incomplete_food_order_items(datetime.today(), command_body['channel_name'])
+
         post_at: int = round((datetime.now() + CHECKOUT_REMINDER_IN).timestamp())
         resp2 = self.slack_client.api_call(
             "chat.scheduleMessage",
             channel=command_body['channel_name'],
             user=user.slack_user_id,
             post_at=post_at,
-            text="@{} Looks like you forgot to checkout order from {}".format(command_body['user_name'], ordering_link),
+            text="@{} Looks like you forgot to checkout order from {}.\nUrge your friends to place an order and call */ni order*".format(command_body['user_name'], ordering_link),
             link_names=True
         )
         if not resp2["ok"]:
@@ -166,7 +169,6 @@ class FoodHandler(SlackCommandHandler):
             raise RuntimeError('failed')
         scheduled_message_id = resp2['scheduled_message_id']
 
-        print("created order by : " + str(user.user_id)) #todo wojtek
         order = self.food_order_service.create_food_order(
             user, datetime.today(), ordering_link,
             scheduled_message_id, command_body['channel_name'])
@@ -217,13 +219,16 @@ class FoodHandler(SlackCommandHandler):
 
         order_items: [FoodOrderItem] = self.food_order_service.get_food_order_items_by_date(user, datetime.today(), command_body['channel_name'])
         order_items_text = ''
+        total_order_cost = Decimal(0.0)
         if order_items:
             for order_item in order_items:
                 eating_user = self.user_service.get_user_by_id(order_item.eating_user_id)
                 order_items_text += get_user_name(eating_user) + " - " + order_item.description + " (" + str(
                     order_item.cost) + " PLN)\n"
+                total_order_cost += order_item.cost
+            order_items_text += "\nTotal cost: " + str(total_order_cost) + " PLN"
 
-        if order_items_text == '':
+        if total_order_cost == Decimal(0):
             self.slack_client.api_call(
                 "chat.postMessage",
                 channel=command_body['channel_name'],

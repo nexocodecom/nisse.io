@@ -5,7 +5,7 @@ from marshmallow_oneofschema import OneOfSchema
 
 from nisse.utils.date_helper import parse_formatted_date
 from nisse.utils.string_helper import get_full_class_name
-from nisse.utils.validation_helper import is_number, validate_date
+from nisse.utils.validation_helper import is_number, validate_date, validate_price
 
 DAILY_HOUR_LIMIT = 24
 
@@ -31,6 +31,9 @@ def check_date(day):
         raise ValidationError(
             'Provide date in format year-month-day e.g. {}'.format(date.today().isoformat()), ["day"])
 
+def check_valid_price(price):
+    if not validate_price(price):
+        raise ValidationError("Provided price is invalid. Expected value bigger than zero")
 
 class SlackUser(object):
 
@@ -108,8 +111,7 @@ class FoodOrderForm(object):
 
     class Schema(Schema):
         ordered_item = fields.String()
-        ordered_item_price = fields.String()
-        #ordered_item_price = fields.String(validate=check_date_not_from_future) TODO
+        ordered_item_price = fields.String(validate=check_valid_price)
 
         @post_load
         def make_obj(self, data):
