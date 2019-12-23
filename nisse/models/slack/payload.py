@@ -303,9 +303,20 @@ class FoodOrderPayload(Payload):
             return FoodOrderPayload(**data)
 
     def handler_type(self) -> type:
-        from nisse.routes.slack.command_handlers.food_handler import FoodHandler
-        return FoodHandler
+        from nisse.routes.slack.command_handlers.food_item_handler import FoodItemHandler
+        return FoodItemHandler
 
+class FoodDebtPayPayload(Payload):
+
+    class Schema(Payload.Schema):
+
+        @post_load
+        def make_obj(self, data):
+            return FoodDebtPayPayload(**data)
+
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.food_debt_handler import FoodDebtHandler
+        return FoodDebtHandler
 
 class RemindTimeReportBtnPayload(Payload):
 

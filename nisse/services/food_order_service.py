@@ -1,4 +1,6 @@
 from datetime import date
+from decimal import Decimal
+
 from flask_injector import inject
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, desc
@@ -9,13 +11,13 @@ from nisse.models.slack.food import UserDebt
 
 
 class FoodOrderService(object):
-    """ FoodOrder service
-    """
+
     @inject
     def __init__(self, db: SQLAlchemy):
         self.db = db
 
-    def create_food_order(self, ordering_person: User, order_date: date, link: str, reminder: str, channel_name: str) -> FoodOrder:
+    def create_food_order(self, ordering_person: User, order_date: date, link: str, reminder: str,
+                          channel_name: str) -> FoodOrder:
         food_order = FoodOrder(ordering_user_id=ordering_person.user_id,
                                order_date=order_date,
                                link=link,
@@ -27,7 +29,7 @@ class FoodOrderService(object):
         return food_order
 
     def create_food_order_item(self, order: FoodOrder, eating_person: User, desc: str,
-                               cost: float=None) -> FoodOrderItem:
+                               cost: Decimal = None) -> FoodOrderItem:
         paid = order.ordering_user_id == eating_person.user_id
         self.remove_food_order_item(order.food_order_id, eating_person)
         food_order_item = FoodOrderItem(food_order_id=order.food_order_id,
@@ -62,7 +64,6 @@ class FoodOrderService(object):
             .filter(FoodOrderItem.food_order_id == order.food_order_id) \
             .filter(FoodOrderItem.cost != 0)
 
-
     def remove_food_order_item(self, food_order_id: str, eating_person: User):
         removed_item: FoodOrderItem = self.db.session.query(FoodOrderItem) \
             .filter(FoodOrderItem.eating_user_id == eating_person.user_id) \
@@ -87,7 +88,6 @@ class FoodOrderService(object):
         if removed_order_items:
             for removed_order_item in removed_order_items:
                 self.db.session.delete(removed_order_item)
-
 
     def checkout_order(self, ordering_person: User, order_date: date, channel_name: str):
         original = self.get_owned_order_by_date_and_channel(ordering_person, order_date, channel_name)
@@ -167,7 +167,7 @@ class FoodOrderService(object):
             .limit(3) \
             .all()
 
-    def mark_incomplete_food_order_items(self, order_date: date, channel_name: str):
+    def remove_incomplete_food_order_items(self, order_date: date, channel_name: str):
         pending_orders = self.get_all_pending_orders_by_date_and_channel(order_date, channel_name)
         if not pending_orders:
             return
@@ -175,10 +175,22 @@ class FoodOrderService(object):
             self.remove_all_items_for_order(order.food_order_id)
 
     def get_all_pending_orders_by_date_and_channel(self, order_date: date, channel_name: str):
-            date_str = order_date.isoformat()
-            return self.db.session.query(FoodOrder) \
-                .filter(FoodOrder.order_date == date_str) \
-                .filter(FoodOrder.channel_name == channel_name) \
-                .filter(FoodOrder.reminder.isnot(None)) \
-                .order_by(FoodOrder.food_order_id.asc()) \
-                .all()
+        date_str = order_date.isoformat()
+        return self.db.session.query(FoodOrder) \
+            .filter(FoodOrder.order_date == date_str) \
+            .filter(FoodOrder.channel_name == channel_name) \
+            .filter(FoodOrder.reminder.isnot(None)) \
+            .order_by(FoodOrder.food_order_id.asc()) \
+            .all()
+
+    def get_all_pending_orders(self):
+        return self.db.session.query(FoodOrder) \
+            .filter(FoodOrder.reminder.isnot(None)) \
+            .order_by(FoodOrder.food_order_id.asc()) \
+            .all()
+
+    def get_all_food_channels(self):
+        channels = []
+        for order in self.db.session.query(FoodOrder).distinct(FoodOrder.channel_name):
+            channels.append(order.channel_name)
+        return channels
