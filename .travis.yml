@@ -2,30 +2,26 @@ language: python
 python:
   - 3.7
 install: pip install -r requirements.txt
-before_script:
-  - export APP_CONFIG_FILE=development
-  - export FLASK_APP="nisse"
-  - export FLASK_DEBUG=1
+# before_script:
+#   - export APP_CONFIG_FILE=development
+#   - export FLASK_APP="nisse"
+#   - export FLASK_DEBUG=1
 
-script: python -m unittest
+# script: python -m unittest
 
-# jobs:
-#   include:
-#     - stage: test    
-#       python:
-#         - 3.6
-#       language: python
-#       install: pip install -r requirements.txt
-#       before_script:
-#         - export APP_CONFIG_FILE=development
-#         - export FLASK_APP="nisse"
-#         - export FLASK_DEBUG=1
-#       script: python -m unittest
+jobs:
+  include:
+    - stage: test
+      before_script:
+        - export APP_CONFIG_FILE=development
+        - export FLASK_APP="nisse"
+        - export FLASK_DEBUG=1
+      script: 
+        - python -m unittest
 
-#     - stage: image    
-#       language: python
-#       services:
-#         - docker
-#       before_script:
-#         - docker login registry.nexo.zone -u gitlab-ci -p $ci_token
-#       script: echp "test"
+    - stage: image    
+      services:
+        - docker
+      before_script:
+        - docker login registry.nexo.zone -u gitlab-ci -p $ci_token
+      script: echp "test"
