@@ -23,6 +23,9 @@ jobs:
       services:
         - docker
       before_script:
+        - cd misc
+        - openssl aes-256-cbc -K $encrypted_67daa94222db_key -iv $encrypted_67daa94222db_iv -in deploy_config.tar.gz.enc -out deploy_config.tar.gz -d
+        - ls -al 
         - docker login registry.nexo.zone -u gitlab-ci -p $ci_token
         - export `cat __version__.py | sed 's/ //g' | sed 's/"//g'`
         - docker build -t registry.nexo.zone/internal/nisse-ci:`echo $__version__`.dev .
