@@ -171,7 +171,6 @@ class FoodCommandHandler(SlackCommandHandler):
             )
             if not resp["ok"]:
                 self.logger.error(resp)
-                print(resp)
                 raise RuntimeError('failed')
             return None
 
