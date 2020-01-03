@@ -1,0 +1,10 @@
+language: python
+python:
+  - 3.6
+install: pip install -r requirements.txt
+before_script:
+  - export APP_CONFIG_FILE=development
+  - export FLASK_APP="nisse"
+  - export FLASK_DEBUG=1
+
+script: python -m unittest
