@@ -1,9 +1,8 @@
-python:
-  - 3.6
-      
 jobs:
   include:
     - stage: test    
+      python:
+        - 3.6
       language: python
       install: pip install -r requirements.txt
       before_script:
