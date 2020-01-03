@@ -24,4 +24,8 @@ jobs:
         - docker
       before_script:
         - docker login registry.nexo.zone -u gitlab-ci -p $ci_token
-      script: echp "test"
+        - export `cat __version__.py | sed 's/ //g' | sed 's/"//g'`
+        - docker build -t registry.nexo.zone/internal/nisse-ci:`echo $__version__`.dev .
+        - docker push registry.nexo.zone/internal/nisse-ci:`echo $__version__`.dev
+      script: 
+        - echo "test"
