@@ -8,6 +8,7 @@ from flask_restful import Resource
 from nisse.models.slack.errors import Error
 from nisse.models.slack.message import Message
 from nisse.routes.slack.command_handlers.delete_time_command_handler import DeleteTimeCommandHandler
+from nisse.routes.slack.command_handlers.food_command_handler import FoodCommandHandler
 from nisse.routes.slack.command_handlers.list_command_handler import ListCommandHandler
 from nisse.routes.slack.command_handlers.project_command_handler import ProjectCommandHandler
 from nisse.routes.slack.command_handlers.reminder_command_handler import ReminderCommandHandler
@@ -15,6 +16,7 @@ from nisse.routes.slack.command_handlers.report_command_handler import ReportCom
 from nisse.routes.slack.command_handlers.show_help_command_handler import ShowHelpCommandHandler
 from nisse.routes.slack.command_handlers.submit_time_command_handler import SubmitTimeCommandHandler
 from nisse.routes.slack.command_handlers.vacation_command_handler import VacationCommandHandler
+from nisse.scheduled.scheduled_tasks import ScheduledTasks
 from nisse.services.exception import DataException, SlackUserException
 
 
@@ -29,7 +31,9 @@ class SlackCommand(Resource):
                  show_help_handler: ShowHelpCommandHandler,
                  report_command_handler: ReportCommandHandler,
                  delete_time_command_handler: DeleteTimeCommandHandler,
-                 project_command_handler: ProjectCommandHandler):
+                 project_command_handler: ProjectCommandHandler,
+                 food_command_handler: FoodCommandHandler,
+                 scheduled_tasks: ScheduledTasks):
         self.app = app
         self.set_reminder_handler = set_reminder_handler
         self.error_schema = Error.Schema()
@@ -42,8 +46,13 @@ class SlackCommand(Resource):
             'vacation': vacation_command_handler.dispatch_vacation,
             'reminder': set_reminder_handler.dispatch_reminder,
             'project': project_command_handler.dispatch_project_command,
+            'food': food_command_handler.order_start,
+            'order': food_command_handler.order_checkout,
+            'pay': food_command_handler.show_debt,
+            'debt': scheduled_tasks.show_debtors,
             'help': show_help_handler.create_help_command_message
         }
+        scheduled_tasks.schedule_all()
 
     def post(self):
         command_body = request.form

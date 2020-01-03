@@ -5,7 +5,7 @@ from marshmallow_oneofschema import OneOfSchema
 
 from nisse.utils.date_helper import parse_formatted_date
 from nisse.utils.string_helper import get_full_class_name
-from nisse.utils.validation_helper import is_number, validate_date
+from nisse.utils.validation_helper import is_number, validate_date, validate_price
 
 DAILY_HOUR_LIMIT = 24
 
@@ -31,6 +31,9 @@ def check_date(day):
         raise ValidationError(
             'Provide date in format year-month-day e.g. {}'.format(date.today().isoformat()), ["day"])
 
+def check_valid_price(price):
+    if not validate_price(price):
+        raise ValidationError("Provided price is invalid. Expected value bigger than zero")
 
 class SlackUser(object):
 
@@ -102,6 +105,21 @@ class ReportGenerateForm(object):
         self.day_to = day_to
         if user:
             self.user = user
+
+
+class FoodOrderForm(object):
+
+    class Schema(Schema):
+        ordered_item = fields.String()
+        ordered_item_price = fields.String(validate=check_valid_price)
+
+        @post_load
+        def make_obj(self, data):
+            return FoodOrderForm(**data)
+
+    def __init__(self, ordered_item, ordered_item_price):
+        self.ordered_item = ordered_item
+        self.ordered_item_price = ordered_item_price
 
 
 class Team(object):
@@ -229,6 +247,27 @@ class ReportGenerateFormPayload(Payload):
         return ReportCommandHandler
 
 
+class FoodOrderFormPayload(Payload):
+
+    class Schema(Payload.Schema):
+        submission = fields.Nested(FoodOrderForm.Schema)
+
+        @post_load
+        def make_obj(self, data):
+            return FoodOrderFormPayload(**data)
+
+    def __init__(self, type, token, action_ts, team: Team, user: SlackUser, channel: Channel, response_url,
+                 submission: FoodOrderForm=None, actions=None, trigger_id=None,
+                 messages_ts=None):
+        super().__init__(type, token, action_ts, team, user, channel,
+                         response_url, actions, trigger_id, messages_ts)
+        self.submission = submission
+
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.food_handler import FoodHandler
+        return FoodHandler
+
+
 class ListCommandPayload(Payload):
 
     class Schema(Payload.Schema):
@@ -254,6 +293,30 @@ class DeleteTimeEntryPayload(Payload):
         from nisse.routes.slack.command_handlers.delete_time_command_handler import DeleteTimeCommandHandler
         return DeleteTimeCommandHandler
 
+
+class FoodOrderPayload(Payload):
+
+    class Schema(Payload.Schema):
+
+        @post_load
+        def make_obj(self, data):
+            return FoodOrderPayload(**data)
+
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.food_item_handler import FoodItemHandler
+        return FoodItemHandler
+
+class FoodDebtPayPayload(Payload):
+
+    class Schema(Payload.Schema):
+
+        @post_load
+        def make_obj(self, data):
+            return FoodDebtPayPayload(**data)
+
+    def handler_type(self) -> type:
+        from nisse.routes.slack.command_handlers.food_debt_handler import FoodDebtHandler
+        return FoodDebtHandler
 
 class RemindTimeReportBtnPayload(Payload):
 
@@ -343,6 +406,8 @@ class GenericPayloadSchema(OneOfSchema):
         get_full_class_name(ReportGenerateFormPayload): ReportGenerateFormPayload.Schema,
         get_full_class_name(ListCommandPayload): ListCommandPayload.Schema,
         get_full_class_name(DeleteTimeEntryPayload): DeleteTimeEntryPayload.Schema,
+        get_full_class_name(FoodOrderFormPayload): FoodOrderFormPayload.Schema,
+        get_full_class_name(FoodOrderPayload): FoodOrderPayload.Schema,
         get_full_class_name(RemindTimeReportBtnPayload): RemindTimeReportBtnPayload.Schema,
         get_full_class_name(RequestFreeDaysPayload): RequestFreeDaysPayload.Schema,
         get_full_class_name(ProjectAddPayload): ProjectAddPayload.Schema

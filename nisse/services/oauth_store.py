@@ -35,6 +35,8 @@ class OAuthStore(object):
                 client_id = json.loads(client_secret_json)['web']['client_id']
                 token_service = self._create_token_service()
                 db_token = token_service.find(client_id)
+                if db_token is None:
+                    raise RuntimeError("token not found for client " + client_id)
                 self.credentials = self.credentials_from_dict(self._credentials_from_db_token(db_token))
         elif not os.path.isfile('./config/client_secret.json'):
             raise RuntimeError('Unable to locate client_secret.json')

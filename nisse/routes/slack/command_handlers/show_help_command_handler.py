@@ -64,6 +64,24 @@ class ShowHelpCommandHandler(SlackCommandHandler):
                 text="*{0} reminder set [_mon:HH:MM,tue:HH:MM..._]*: Configure reminder time for particular day, or several days at once".format(command_name),
                 attachment_type="default",
                 mrkdwn_in=["text"]
+            ),
+            Attachment(
+                text="*{0} food [_URL_]*: Start food ordering for this channel".format(
+                    command_name),
+                attachment_type="default",
+                mrkdwn_in=["text"]
+            ),
+            Attachment(
+                text="*{0} order*: Checkout order and display orders for today for this channel".format(
+                    command_name),
+                attachment_type="default",
+                mrkdwn_in=["text"]
+            ),
+            Attachment(
+                text="*{0} pay*: Show your bills for food".format(
+                    command_name),
+                attachment_type="default",
+                mrkdwn_in=["text"]
             )
         ]
 

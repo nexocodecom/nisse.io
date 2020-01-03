@@ -1,12 +1,8 @@
-from flask_restful import Resource, request
 from flask_injector import inject
-import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import flask
 import requests
-import requests_oauthlib
 from nisse.services import OAuthStore
-from logging import Logger
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
